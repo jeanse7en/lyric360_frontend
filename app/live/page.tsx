@@ -30,7 +30,7 @@ export default function LiveDashboard() {
     setQueue(data || []);
     
     // Nếu chưa xem bài nào, tự động hiển thị bài đang chơi (nếu có)
-    const playingSong = data?.find((item) => item.status === "playing");
+    const playingSong = (data as any[])?.find((item) => item.status === "playing");
     if (playingSong && !currentSongId) {
       setCurrentSongId(playingSong.songs.id);
     }
