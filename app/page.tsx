@@ -5,6 +5,7 @@ import BookerInfo from "./_components/BookerInfo";
 import SessionSelector from "./_components/SessionSelector";
 import SongSearch from "./_components/SongSearch";
 import DrinkSelector from "./_components/DrinkSelector";
+import ToneInput from "./_components/ToneInput";
 
 type Session = { id: string; session_date: string; status: 'planned' | 'live' | 'ended' };
 
@@ -14,6 +15,7 @@ export default function MobileRegistration() {
   const [phone, setPhone] = useState("");
   const [tablePos, setTablePos] = useState("");
   const [selectedSong, setSelectedSong] = useState<any>(null);
+  const [tone, setTone] = useState("");
   const [selectedDrinks, setSelectedDrinks] = useState<string[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState("");
@@ -47,6 +49,7 @@ export default function MobileRegistration() {
           singer_name: singerName,
           booker_phone: phone,
           table_position: tablePos,
+          tone: tone || undefined,
           drinks: selectedDrinks,
         }),
       });
@@ -82,6 +85,8 @@ export default function MobileRegistration() {
           />
 
           <SongSearch selectedSong={selectedSong} onSelect={setSelectedSong} />
+
+          <ToneInput value={tone} onChange={setTone} />
 
           <DrinkSelector selected={selectedDrinks} onChange={setSelectedDrinks} />
 
