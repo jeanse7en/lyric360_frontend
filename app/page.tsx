@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Header from "./_components/Header";
+import Footer from "./_components/Footer";
 import BookerInfo from "./_components/BookerInfo";
 import SessionSelector from "./_components/SessionSelector";
 import SongSearch from "./_components/SongSearch";
@@ -62,7 +64,9 @@ export default function MobileRegistration() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:bg-gray-200 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header />
+      <div className="flex-1 p-4 md:bg-gray-200 flex items-center justify-center">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6">
         <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">Đăng Ký Bài Hát</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -95,6 +99,8 @@ export default function MobileRegistration() {
           </button>
         </form>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 }

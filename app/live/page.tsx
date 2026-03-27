@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Header from "../_components/Header";
+import Footer from "../_components/Footer";
 
 type Session = { id: string; session_date: string; status: string };
 
@@ -25,7 +27,9 @@ export default function SessionPickerPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+      <Header />
+      <div className="flex-1 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <h1 className="text-2xl font-bold text-center text-blue-400 mb-8">Chọn Đêm Diễn</h1>
 
@@ -55,6 +59,8 @@ export default function SessionPickerPage() {
           ))}
         </div>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 }

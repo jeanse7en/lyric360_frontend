@@ -17,7 +17,10 @@ type Props = {
 export default function LiveList({ queue, onPlay, onStop, onViewSong, onOpenNote }: Props) {
   return (
     <div className="w-full md:w-1/3 bg-gray-800 rounded-xl p-4 shadow-2xl overflow-y-auto max-h-[90vh]">
-      <h2 className="text-xl font-bold mb-4 text-blue-400 border-b border-gray-700 pb-2">Hàng Đợi Hát (Live)</h2>
+      <div className="flex items-center gap-3 mb-4 border-b border-gray-700 pb-2">
+        <a href="/live" className="text-gray-400 hover:text-white text-sm transition-colors">← Quay lại</a>
+        <h2 className="text-xl font-bold text-blue-400">Hàng Đợi Hát (Live)</h2>
+      </div>
       <div className="space-y-3">
         {queue.map((item, index) => (
           <div
