@@ -72,6 +72,7 @@ export default function SongLyricPage() {
           <LyricFab
             lyric={selected}
             editMode={editMode}
+            editUrl={selected.slide_drive_url ? toEditUrl(selected.slide_drive_url) : undefined}
             onEdit={() => setEditMode(v => !v)}
             onVerify={async () => {
               await fetch(`${API}/api/songs/${id}/lyrics/${selected.id}/verify`, { method: "POST" });

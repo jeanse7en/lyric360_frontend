@@ -7,12 +7,13 @@ type Lyric = { id: string; slide_drive_url?: string; verified_at: string | null 
 type Props = {
   lyric: Lyric;
   editMode: boolean;
+  editUrl?: string;
   onEdit: () => void;
   onVerify: () => void;
   onDelete: () => void;
 };
 
-export default function LyricFab({ lyric, editMode, onEdit, onVerify, onDelete }: Props) {
+export default function LyricFab({ lyric, editMode, editUrl, onEdit, onVerify, onDelete }: Props) {
   const [open, setOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
@@ -28,6 +29,17 @@ export default function LyricFab({ lyric, editMode, onEdit, onVerify, onDelete }
               >
                 ✏️ {editMode ? "Thoát chỉnh sửa" : "Chỉnh sửa"}
               </button>
+            )}
+            {editMode && editUrl && (
+              <a
+                href={editUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 px-4 py-2 rounded-full shadow-lg text-sm font-medium bg-gray-600 hover:bg-gray-500 text-white transition-colors"
+              >
+                ↗ Mở tab mới
+              </a>
             )}
             {!lyric.verified_at && (
               <button
