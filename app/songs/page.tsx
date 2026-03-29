@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import SongListItem from "./_components/SongListItem";
+import SongFilter, { type VerifyStatus } from "./_components/SongFilter";
 import Header from "../_components/Header";
 import Footer from "../_components/Footer";
 
@@ -17,19 +18,35 @@ type Song = {
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
+function buildUrl(query: string, verifyStatus: VerifyStatus) {
+  const params = new URLSearchParams();
+  if (query) params.set("q", query);
+  if (verifyStatus) params.set("verifyStatus", verifyStatus);
+  const qs = params.toString();
+  return `/songs${qs ? `?${qs}` : ""}`;
+}
+
 function SongsPageInner() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [songs, setSongs] = useState<Song[]>([]);
   const [unverifiedCount, setUnverifiedCount] = useState(0);
-  const [q, setQ] = useState(searchParams.get('q') ?? "");
+  const [query, setQuery] = useState(searchParams.get("q") ?? "");
+  const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>(
+    (searchParams.get("verifyStatus") as VerifyStatus) ?? ""
+  );
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const fetchSongs = async (search: string, currentOffset: number, append = false) => {
+  const fetchSongs = async (search: string, status: VerifyStatus, currentOffset: number, append = false) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/songs/manage?q=${search}&offset=${currentOffset}&limit=20`);
+      const params = new URLSearchParams({ offset: String(currentOffset), limit: "20" });
+      if (search) params.set("q", search);
+      if (status) params.set("verify_status", status);
+      const res = await fetch(`${API}/api/songs/manage?${params}`);
       if (!res.ok) return;
       const data: Song[] = await res.json();
       setHasMore(data.length === 20);
@@ -44,57 +61,68 @@ function SongsPageInner() {
 
   useEffect(() => {
     fetchUnverifiedCount();
-    fetchSongs(q, 0);
+    fetchSongs(query, verifyStatus, 0);
   }, []);
 
   useEffect(() => {
-    const id = setTimeout(() => { setOffset(0); fetchSongs(q, 0); }, 300);
+    const id = setTimeout(() => {
+      router.replace(buildUrl(query, verifyStatus));
+      setOffset(0);
+      fetchSongs(query, verifyStatus, 0);
+    }, 300);
     return () => clearTimeout(id);
-  }, [q]);
+  }, [query, verifyStatus]);
 
   const loadMore = () => {
     const next = offset + 20;
     setOffset(next);
-    fetchSongs(q, next, true);
+    fetchSongs(query, verifyStatus, next, true);
   };
+
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting && hasMore && !loading) loadMore(); },
+      { threshold: 0.1 }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loading, offset, query, verifyStatus]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
       <div className="flex-1 max-w-2xl w-full mx-auto py-6 px-4">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Quản Lý Bài Hát</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold text-gray-800">Quản Lý Bài Hát</h1>
+          {unverifiedCount > 0 && (
+            <button
+              onClick={() => { setQuery(""); setVerifyStatus("UNVERIFIED_ALL"); }}
+              className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 hover:bg-amber-100 transition-colors text-sm"
+            >
+              <span className="text-amber-600 font-medium">🔔 {unverifiedCount} bài cần đánh giá</span>
+            </button>
+          )}
+        </div>
 
-        {/* Unverified banner */}
-        {unverifiedCount > 0 && (
-          <div className="mb-4 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-            <span className="text-amber-600 font-medium">
-              🔔 Có {unverifiedCount} bài mới cần bạn đánh giá
-            </span>
-          </div>
-        )}
-
-        {/* Search */}
-        <input
-          type="text"
-          value={q}
-          onChange={e => setQ(e.target.value)}
-          placeholder="Tìm kiếm bài hát..."
-          className="w-full px-4 py-2 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 bg-white"
+        <SongFilter
+          query={query}
+          verifyStatus={verifyStatus}
+          onQueryChange={setQuery}
+          onVerifyStatusChange={setVerifyStatus}
         />
 
         {/* List */}
-        <div className="bg-white rounded-xl border overflow-hidden shadow-sm">
-          {songs.map(song => <SongListItem key={song.id} song={song} q={q} />)}
+        <div className="bg-white rounded-xl border shadow-sm">
+          {songs.map(song => <SongListItem key={song.id} song={song} q={query} />)}
           {!loading && songs.length === 0 && (
             <p className="text-center text-gray-400 py-8">Không tìm thấy bài hát nào</p>
           )}
         </div>
 
-        {hasMore && (
-          <button onClick={loadMore} disabled={loading} className="mt-4 w-full py-2 text-sm text-blue-600 hover:text-blue-700 font-medium">
-            {loading ? "Đang tải..." : "⬇ Tải thêm"}
-          </button>
-        )}
+        <div ref={sentinelRef} className="py-2 text-center text-sm text-gray-400">
+          {loading && "Đang tải..."}
+        </div>
       </div>
       <Footer />
     </div>

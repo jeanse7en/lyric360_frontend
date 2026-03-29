@@ -1,5 +1,7 @@
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+"use client";
+
+import { useState, useRef } from "react";
+import SongActionMenu from "./SongActionMenu";
 
 type Song = {
   id: string;
@@ -14,19 +16,23 @@ type Props = { song: Song; q: string };
 
 export default function SongListItem({ song, q }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+  const [openUpward, setOpenUpward] = useState(false);
+  const rowRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  const toggleMenu = () => {
+    if (rowRef.current) {
+      const rect = rowRef.current.getBoundingClientRect();
+      setOpenUpward(rect.bottom + 90 > window.innerHeight);
+    }
+    setMenuOpen(v => !v);
+  };
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-white border-b hover:bg-gray-50 transition-colors">
+    <div
+      ref={rowRef}
+      onClick={toggleMenu}
+      className="relative flex items-center justify-between px-4 py-3 bg-white border-b hover:bg-gray-50 transition-colors cursor-pointer"
+    >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="font-medium text-gray-900 truncate">{song.title}</span>
@@ -44,31 +50,15 @@ export default function SongListItem({ song, q }: Props) {
         </div>
       </div>
 
-      {/* Three-dot menu */}
-      <div className="relative ml-4" ref={menuRef}>
-        <button
-          onClick={() => setMenuOpen(v => !v)}
-          className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
-        >
-          ⋯
-        </button>
-        {menuOpen && (
-          <div className="absolute right-0 mt-1 w-40 bg-white border rounded-lg shadow-xl z-10 overflow-hidden">
-            <button
-              onClick={() => { router.push(`/songs/${song.id}/lyric?q=${encodeURIComponent(q)}`); setMenuOpen(false); }}
-              className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors"
-            >
-              🎵 Mở Lyric
-            </button>
-            <button
-              onClick={() => { router.push(`/songs/${song.id}/sheet?q=${encodeURIComponent(q)}`); setMenuOpen(false); }}
-              className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors"
-            >
-              🎼 Mở Sheet
-            </button>
-          </div>
-        )}
-      </div>
+      <span className="ml-4 p-2 rounded-full text-gray-400">⋯</span>
+
+      <SongActionMenu
+        songId={song.id}
+        query={q}
+        open={menuOpen}
+        openUpward={openUpward}
+        onClose={() => setMenuOpen(false)}
+      />
     </div>
   );
 }

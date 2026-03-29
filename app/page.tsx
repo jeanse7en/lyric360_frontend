@@ -65,7 +65,6 @@ export default function MobileRegistration() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header />
       <div className="flex-1 p-4 md:bg-gray-200 flex items-center justify-center">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6">
         <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">Đăng Ký Bài Hát</h1>
