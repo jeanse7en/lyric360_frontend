@@ -88,21 +88,49 @@ export default function LiveDashboard() {
     fetchQueue();
   };
 
+  const [queueOpen, setQueueOpen] = useState(false);
+
   const currentSong = queue.find(q => q.songs?.id === currentSongId)?.songs;
   const sheets = currentSong?.song_sheets ?? [];
   const lyrics = currentSong?.song_lyrics ?? [];
+  const waitingCount = queue.filter(q => q.status === "waiting").length;
+
+  const handleViewSongAndCollapse = (songId: string) => {
+    handleViewSong(songId);
+    setQueueOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6 font-sans">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
 
-        <LiveList
-          queue={queue}
-          onPlay={handlePlay}
-          onStop={handleStop}
-          onViewSong={handleViewSong}
-          onOpenNote={setNoteDialog}
-        />
+        {/* Desktop sidebar — always visible on md+ */}
+        <div className="hidden md:block md:w-1/3 shrink-0">
+          <LiveList
+            queue={queue}
+            onPlay={handlePlay}
+            onStop={handleStop}
+            onViewSong={handleViewSong}
+            onOpenNote={setNoteDialog}
+          />
+        </div>
+
+        {/* Mobile drawer — slide in from left as overlay */}
+        {queueOpen && (
+          <div className="md:hidden fixed inset-0 z-40 flex">
+            <div className="w-80 max-w-[85vw] h-full overflow-y-auto bg-gray-900 shadow-2xl">
+              <LiveList
+                queue={queue}
+                onPlay={handlePlay}
+                onStop={handleStop}
+                onViewSong={handleViewSongAndCollapse}
+                onOpenNote={setNoteDialog}
+              />
+            </div>
+            {/* Backdrop */}
+            <div className="flex-1 bg-black/50" onClick={() => setQueueOpen(false)} />
+          </div>
+        )}
 
         <div className="w-full md:w-2/3 flex flex-col gap-4">
           <SheetPanel
@@ -122,6 +150,14 @@ export default function LiveDashboard() {
           />
         </div>
       </div>
+
+      {/* Mobile queue toggle FAB */}
+      <button
+        className="md:hidden fixed bottom-6 left-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-xl font-medium text-sm transition-colors"
+        onClick={() => setQueueOpen(v => !v)}
+      >
+        🎤 {waitingCount} chờ / {queue.length} tổng
+      </button>
 
       {fullScreenMode !== 'none' && (
         <FullscreenOverlay
