@@ -2,11 +2,40 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const NAV = [
   { label: "Live", href: "/live" },
   { label: "Bài hát", href: "/songs" },
 ];
+
+function ThemeToggle() {
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("theme");
+    const isDark = stored ? stored === "dark" : true; // default dark
+    setDark(isDark);
+    document.documentElement.classList.toggle("dark", isDark);
+  }, []);
+
+  const toggle = () => {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("theme", next ? "dark" : "light");
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors text-base"
+      title={dark ? "Chuyển sang sáng" : "Chuyển sang tối"}
+    >
+      {dark ? "☀️" : "🌙"}
+    </button>
+  );
+}
 
 export default function Header() {
   const pathname = usePathname();
@@ -34,6 +63,7 @@ export default function Header() {
               </Link>
             );
           })}
+          <ThemeToggle />
         </nav>
       </div>
     </header>

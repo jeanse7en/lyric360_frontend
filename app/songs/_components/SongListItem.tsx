@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
-import SongActionMenu from "./SongActionMenu";
+import { useRouter } from "next/navigation";
 
 type Song = {
   id: string;
@@ -14,28 +13,17 @@ type Song = {
 
 type Props = { song: Song; q: string };
 
-export default function SongListItem({ song, q }: Props) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [openUpward, setOpenUpward] = useState(false);
-  const rowRef = useRef<HTMLDivElement>(null);
-
-  const toggleMenu = () => {
-    if (rowRef.current) {
-      const rect = rowRef.current.getBoundingClientRect();
-      setOpenUpward(rect.bottom + 90 > window.innerHeight);
-    }
-    setMenuOpen(v => !v);
-  };
+export default function SongListItem({ song }: Props) {
+  const router = useRouter();
 
   return (
     <div
-      ref={rowRef}
-      onClick={toggleMenu}
-      className="relative flex items-center justify-between px-4 py-3 bg-white border-b hover:bg-gray-50 transition-colors cursor-pointer"
+      onClick={() => router.push(`/songs/${song.id}`)}
+      className="relative flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-gray-900 truncate">{song.title}</span>
+          <span className="font-medium text-gray-900 dark:text-white truncate">{song.title}</span>
           {song.unverified_count > 0 && (
             <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium shrink-0">
               {song.unverified_count} chưa xác nhận
@@ -49,16 +37,6 @@ export default function SongListItem({ song, q }: Props) {
           <span>🎼 {song.sheet_count} sheet</span>
         </div>
       </div>
-
-      <span className="ml-4 p-2 rounded-full text-gray-400">⋯</span>
-
-      <SongActionMenu
-        songId={song.id}
-        query={q}
-        open={menuOpen}
-        openUpward={openUpward}
-        onClose={() => setMenuOpen(false)}
-      />
     </div>
   );
 }

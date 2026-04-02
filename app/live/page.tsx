@@ -26,8 +26,8 @@ function formatDate(d: string) {
 
 const STATUS_BADGE: Record<string, string> = {
   live: "bg-red-600 text-white animate-pulse",
-  planned: "bg-gray-600 text-gray-200",
-  ended: "bg-gray-700 text-gray-400",
+  planned: "bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200",
+  ended: "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -48,7 +48,6 @@ export default function SessionsPage() {
   const [addDate, setAddDate] = useState(today());
   const [editState, setEditState] = useState<EditState>(null);
 
-  // Filters
   const [filterName, setFilterName] = useState("");
   const [dateFrom, setDateFrom] = useState(today());
   const [dateTo, setDateTo] = useState(today());
@@ -112,8 +111,11 @@ export default function SessionsPage() {
     fetchSessions();
   };
 
+  const inputCls = "w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none";
+  const modalInputCls = "w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none";
+
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white flex flex-col">
       <Header />
       <div className="flex-1 max-w-2xl w-full mx-auto py-6 px-4">
 
@@ -130,9 +132,9 @@ export default function SessionsPage() {
 
         {/* Error */}
         {error && (
-          <div className="mb-4 px-4 py-3 rounded-lg bg-red-900 border border-red-500 text-red-200 text-sm flex justify-between">
+          <div className="mb-4 px-4 py-3 rounded-lg bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-500 text-red-700 dark:text-red-200 text-sm flex justify-between">
             <span>{error}</span>
-            <button onClick={() => setError("")} className="ml-3 text-red-400 hover:text-white">✕</button>
+            <button onClick={() => setError("")} className="ml-3 text-red-400 hover:text-red-700 dark:hover:text-white">✕</button>
           </div>
         )}
 
@@ -143,49 +145,50 @@ export default function SessionsPage() {
             value={filterName}
             onChange={e => setFilterName(e.target.value)}
             placeholder="Tìm theo tên buổi diễn..."
-            className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+            className={inputCls}
           />
           <div className="flex gap-2 items-end">
             <div className="flex-1">
-              <label className="text-xs text-gray-400 mb-1 block">Từ ngày</label>
-              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500" />
+              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Từ ngày</label>
+              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className={inputCls} />
             </div>
             <div className="flex-1">
-              <label className="text-xs text-gray-400 mb-1 block">Đến ngày</label>
-              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500" />
+              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Đến ngày</label>
+              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className={inputCls} />
             </div>
-            <button onClick={() => { setDateFrom(""); setDateTo(""); }}
-              className="px-3 py-2 text-xs text-gray-400 hover:text-white border border-gray-600 rounded-lg transition-colors">
+            <button
+              onClick={() => { setDateFrom(""); setDateTo(""); }}
+              className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-lg transition-colors"
+            >
               Xóa lọc
             </button>
           </div>
         </div>
 
         {/* Session list */}
-        {loading && <p className="text-center text-gray-500 py-8">Đang tải...</p>}
+        {loading && <p className="text-center text-gray-400 py-8">Đang tải...</p>}
         {!loading && sessions.length === 0 && (
-          <p className="text-center text-gray-500 py-8">Không có buổi diễn nào</p>
+          <p className="text-center text-gray-400 py-8">Không có buổi diễn nào</p>
         )}
         <div className="space-y-3">
           {sessions.map(session => (
             <div
               key={session.id}
               className={`rounded-xl border transition-all ${
-                session.status === "live" ? "bg-gray-800 border-red-500" :
-                session.status === "ended" ? "bg-gray-800 border-gray-700 opacity-70" :
-                "bg-gray-800 border-gray-600"
+                session.status === "live"
+                  ? "bg-white dark:bg-gray-800 border-red-400 dark:border-red-500"
+                  : session.status === "ended"
+                  ? "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-70"
+                  : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600"
               }`}
             >
-              {/* Row — click to expand */}
               <button
                 className="w-full p-4 text-left flex items-center justify-between"
                 onClick={() => setExpandedId(expandedId === session.id ? null : session.id)}
               >
                 <div className="min-w-0">
-                  {session.name && <p className="font-semibold text-white truncate">{session.name}</p>}
-                  <p className={`text-sm ${session.name ? "text-gray-400" : "font-semibold text-white"}`}>
+                  {session.name && <p className="font-semibold truncate">{session.name}</p>}
+                  <p className={`text-sm ${session.name ? "text-gray-500 dark:text-gray-400" : "font-semibold"}`}>
                     {formatDate(session.session_date)}
                   </p>
                 </div>
@@ -194,7 +197,6 @@ export default function SessionsPage() {
                 </span>
               </button>
 
-              {/* Expanded actions */}
               {expandedId === session.id && (
                 <div className="px-4 pb-4">
                   <SessionActionMenu
@@ -215,23 +217,26 @@ export default function SessionsPage() {
       {/* Add dialog */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 text-gray-900">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-bold mb-4">Thêm buổi diễn mới</h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tên buổi diễn (tuỳ chọn)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tên buổi diễn (tuỳ chọn)</label>
                 <input type="text" value={addName} onChange={e => setAddName(e.target.value)}
                   placeholder="VD: Đêm nhạc Trịnh Công Sơn"
-                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+                  className={modalInputCls} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ngày diễn</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ngày diễn</label>
                 <input type="date" value={addDate} onChange={e => setAddDate(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+                  className={modalInputCls} />
               </div>
             </div>
             <div className="flex gap-3 justify-end mt-5">
-              <button onClick={() => setShowAdd(false)} className="px-4 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200">Hủy</button>
+              <button onClick={() => setShowAdd(false)}
+                className="px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300">
+                Hủy
+              </button>
               <button onClick={handleAdd} disabled={!addDate}
                 className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium disabled:opacity-50">
                 Thêm
@@ -244,23 +249,29 @@ export default function SessionsPage() {
       {/* Edit dialog */}
       {editState && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 text-gray-900">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-bold mb-4">Chỉnh sửa buổi diễn</h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tên buổi diễn</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tên buổi diễn</label>
                 <input type="text" value={editState.name} onChange={e => setEditState({ ...editState, name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+                  className={modalInputCls} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ngày diễn</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ngày diễn</label>
                 <input type="date" value={editState.date} onChange={e => setEditState({ ...editState, date: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+                  className={modalInputCls} />
               </div>
             </div>
             <div className="flex gap-3 justify-end mt-5">
-              <button onClick={() => setEditState(null)} className="px-4 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200">Hủy</button>
-              <button onClick={handleEdit} className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium">Lưu</button>
+              <button onClick={() => setEditState(null)}
+                className="px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300">
+                Hủy
+              </button>
+              <button onClick={handleEdit}
+                className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium">
+                Lưu
+              </button>
             </div>
           </div>
         </div>

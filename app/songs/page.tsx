@@ -3,9 +3,11 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import SongListItem from "./_components/SongListItem";
+import vi from "../../lib/vi";
 import SongFilter, { type VerifyStatus } from "./_components/SongFilter";
 import Header from "../_components/Header";
 import Footer from "../_components/Footer";
+import CreateSongModal from "./_components/CreateSongModal";
 
 type Song = {
   id: string;
@@ -31,6 +33,7 @@ function SongsPageInner() {
   const router = useRouter();
   const [songs, setSongs] = useState<Song[]>([]);
   const [unverifiedCount, setUnverifiedCount] = useState(0);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>(
     (searchParams.get("verifyStatus") as VerifyStatus) ?? ""
@@ -90,11 +93,12 @@ function SongsPageInner() {
   }, [hasMore, loading, offset, query, verifyStatus]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       <Header />
       <div className="flex-1 max-w-2xl w-full mx-auto py-6 px-4">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-800">Quản Lý Bài Hát</h1>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{vi.songsPage.title}</h1>
+          <div className="flex items-center gap-2">
           {unverifiedCount > 0 && (
             <button
               onClick={() => { setQuery(""); setVerifyStatus("UNVERIFIED_ALL"); }}
@@ -103,6 +107,13 @@ function SongsPageInner() {
               <span className="text-amber-600 font-medium">🔔 {unverifiedCount} bài cần đánh giá</span>
             </button>
           )}
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+          >
+            + Thêm
+          </button>
+          </div>
         </div>
 
         <SongFilter
@@ -113,7 +124,7 @@ function SongsPageInner() {
         />
 
         {/* List */}
-        <div className="bg-white rounded-xl border shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           {songs.map(song => <SongListItem key={song.id} song={song} q={query} />)}
           {!loading && songs.length === 0 && (
             <p className="text-center text-gray-400 py-8">Không tìm thấy bài hát nào</p>
@@ -125,6 +136,7 @@ function SongsPageInner() {
         </div>
       </div>
       <Footer />
+      <CreateSongModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
     </div>
   );
 }

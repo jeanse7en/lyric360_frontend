@@ -23,7 +23,7 @@ export default function DrinkSelector({ selected, onChange }: Props) {
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">Nước uống (tuỳ chọn)</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nước uống (tuỳ chọn)</label>
       <div className="flex flex-wrap gap-2">
         {DRINKS.map(drink => (
           <button
@@ -33,7 +33,7 @@ export default function DrinkSelector({ selected, onChange }: Props) {
             className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
               selected.includes(drink.id)
                 ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
+                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-400'
             }`}
           >
             {drink.label}

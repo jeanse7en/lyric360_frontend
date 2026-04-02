@@ -30,7 +30,6 @@ export default function MobileRegistration() {
         const data: Session[] = await res.json();
         if (data.length === 0) return;
         setSessions(data);
-        // Backend already returns live first, so default to first item
         setSelectedSessionId(data[0].id);
       } catch (err) { console.error(err); }
     };
@@ -64,40 +63,31 @@ export default function MobileRegistration() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="flex-1 p-4 md:bg-gray-200 flex items-center justify-center">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6">
-        <h1 className="text-2xl font-bold text-center text-gray-800 mb-6">Đăng Ký Bài Hát</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-
-          <BookerInfo
-            bookerName={bookerName}
-            singerName={singerName}
-            phone={phone}
-            tablePos={tablePos}
-            onBookerNameChange={setBookerName}
-            onSingerNameChange={setSingerName}
-            onPhoneChange={setPhone}
-            onTablePosChange={setTablePos}
-          />
-
-          <SessionSelector
-            sessions={sessions}
-            selectedId={selectedSessionId}
-            onChange={setSelectedSessionId}
-          />
-
-          <SongSearch selectedSong={selectedSong} onSelect={setSelectedSong} />
-
-          <ToneInput value={tone} onChange={setTone} />
-
-          <DrinkSelector selected={selectedDrinks} onChange={setSelectedDrinks} />
-
-          <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700">
-            Gửi Đăng Ký
-          </button>
-        </form>
-      </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      <Header />
+      <div className="flex-1 p-4 flex items-center justify-center">
+        <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <h1 className="text-2xl font-bold text-center text-gray-800 dark:text-white mb-6">Đăng Ký Bài Hát</h1>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <BookerInfo
+              bookerName={bookerName}
+              singerName={singerName}
+              phone={phone}
+              tablePos={tablePos}
+              onBookerNameChange={setBookerName}
+              onSingerNameChange={setSingerName}
+              onPhoneChange={setPhone}
+              onTablePosChange={setTablePos}
+            />
+            <SessionSelector sessions={sessions} selectedId={selectedSessionId} onChange={setSelectedSessionId} />
+            <SongSearch selectedSong={selectedSong} onSelect={setSelectedSong} />
+            <ToneInput value={tone} onChange={setTone} />
+            <DrinkSelector selected={selectedDrinks} onChange={setSelectedDrinks} />
+            <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-500 transition-colors">
+              Gửi Đăng Ký
+            </button>
+          </form>
+        </div>
       </div>
       <Footer />
     </div>

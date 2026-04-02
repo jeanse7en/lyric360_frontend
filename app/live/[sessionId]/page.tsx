@@ -4,10 +4,9 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import LiveList from "../_components/LiveList";
-import SheetPanel from "../_components/SheetPanel";
-import LyricPanel from "../_components/LyricPanel";
+import SheetPanel from "../../_components/SheetPanel";
+import LyricPanel from "../../_components/LyricPanel";
 import NoteDialog from "../_components/NoteDialog";
-import FullscreenOverlay from "../_components/FullscreenOverlay";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,16 +18,13 @@ export default function LiveDashboard() {
 
   const [queue, setQueue] = useState<any[]>([]);
   const [currentSongId, setCurrentSongId] = useState<string | null>(null);
-  const [selectedSheetUrl, setSelectedSheetUrl] = useState<string | null>(null);
-  const [selectedLyricUrl, setSelectedLyricUrl] = useState<string | null>(null);
-  const [fullScreenMode, setFullScreenMode] = useState<'none' | 'sheet' | 'lyric'>('none');
   const [noteDialog, setNoteDialog] = useState({ isOpen: false, queueId: '', tone: '', note: '', rating: 5 });
 
   const fetchQueue = async () => {
     const { data } = await supabase
       .from("queue_registrations")
       .select(`id, singer_name, booker_phone, table_position, status, actual_tone, note, rating, created_at,
-        songs ( id, title, author, song_sheets ( sheet_drive_url, tone_male, tone_female ), song_lyrics ( slide_drive_url ) )`)
+        songs ( id, title, author, song_sheets ( id, sheet_drive_url, tone_male, tone_female, verified_at ), song_lyrics ( id, slide_drive_url, source_lyric, verified_at ) )`)
       .eq("session_id", sessionId)
       .order("created_at", { ascending: true });
 
@@ -52,8 +48,6 @@ export default function LiveDashboard() {
     await supabase.from("queue_registrations").update({ status: "done" }).eq("status", "playing").eq("session_id", sessionId);
     await supabase.from("queue_registrations").update({ status: "playing", actual_start: new Date().toISOString() }).eq("id", queueId);
     setCurrentSongId(songId);
-    setSelectedSheetUrl(null);
-    setSelectedLyricUrl(null);
   };
 
   const handleStop = async (queueId: string) => {
@@ -64,11 +58,6 @@ export default function LiveDashboard() {
 
   const handleViewSong = (songId: string) => {
     setCurrentSongId(songId);
-    const song = queue.find(q => q.songs?.id === songId)?.songs;
-    const firstSheet = song?.song_sheets?.[0];
-    const firstLyric = song?.song_lyrics?.[0];
-    setSelectedSheetUrl(firstSheet?.sheet_drive_url?.replace('/view', '/preview') ?? null);
-    setSelectedLyricUrl(firstLyric?.slide_drive_url?.replace(/\/edit.*/, "/embed?rm=minimal") ?? null);
   };
 
   const handlePresent = async (url: string) => {
@@ -101,7 +90,7 @@ export default function LiveDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6 font-sans">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-6 font-sans">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
 
         {/* Desktop sidebar — always visible on md+ */}
@@ -118,7 +107,7 @@ export default function LiveDashboard() {
         {/* Mobile drawer — slide in from left as overlay */}
         {queueOpen && (
           <div className="md:hidden fixed inset-0 z-40 flex">
-            <div className="w-80 max-w-[85vw] h-full overflow-y-auto bg-gray-900 shadow-2xl">
+            <div className="w-80 max-w-[85vw] h-full overflow-y-auto bg-white dark:bg-gray-900 shadow-2xl">
               <LiveList
                 queue={queue}
                 onPlay={handlePlay}
@@ -134,17 +123,13 @@ export default function LiveDashboard() {
 
         <div className="w-full md:w-2/3 flex flex-col gap-4">
           <SheetPanel
+            key={`sheet-${currentSongId ?? "none"}`}
             sheets={sheets}
-            selectedUrl={selectedSheetUrl}
-            onSelect={setSelectedSheetUrl}
-            onFullscreen={() => setFullScreenMode('sheet')}
             hasSong={!!currentSongId}
           />
           <LyricPanel
+            key={`lyric-${currentSongId ?? "none"}`}
             lyrics={lyrics}
-            selectedUrl={selectedLyricUrl}
-            onSelect={setSelectedLyricUrl}
-            onFullscreen={() => setFullScreenMode('lyric')}
             onPresent={handlePresent}
             hasSong={!!currentSongId}
           />
@@ -158,15 +143,6 @@ export default function LiveDashboard() {
       >
         🎤 {waitingCount} chờ / {queue.length} tổng
       </button>
-
-      {fullScreenMode !== 'none' && (
-        <FullscreenOverlay
-          mode={fullScreenMode}
-          sheetUrl={selectedSheetUrl}
-          lyricUrl={selectedLyricUrl}
-          onClose={() => setFullScreenMode('none')}
-        />
-      )}
 
       <NoteDialog
         state={noteDialog}
