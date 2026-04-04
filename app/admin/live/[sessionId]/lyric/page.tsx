@@ -3,22 +3,23 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import LiveList from "../_components/LiveList";
-import SheetPanel from "../../_components/SheetPanel";
-import LyricPanel from "../../_components/LyricPanel";
-import NoteDialog from "../_components/NoteDialog";
+import LiveList from "../../_components/LiveList";
+import LyricPanel from "../../../../_components/LyricPanel";
+import NoteDialog from "../../_components/NoteDialog";
+import HopAmVietPanel from "./_components/HopAmVietPanel";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export default function LiveDashboard() {
+export default function LiveLyricDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
 
   const [queue, setQueue] = useState<any[]>([]);
   const [currentSongId, setCurrentSongId] = useState<string | null>(null);
-  const [noteDialog, setNoteDialog] = useState({ isOpen: false, queueId: '', tone: '', note: '', rating: 5 });
+  const [noteDialog, setNoteDialog] = useState({ isOpen: false, queueId: "", tone: "", note: "", rating: 5 });
+  const [queueOpen, setQueueOpen] = useState(false);
 
   const fetchQueue = async () => {
     const { data } = await supabase
@@ -30,7 +31,7 @@ export default function LiveDashboard() {
 
     setQueue(data || []);
 
-    const playingSong = (data as any[])?.find(item => item.status === "playing");
+    const playingSong = (data as any[])?.find((item) => item.status === "playing");
     if (playingSong && !currentSongId) setCurrentSongId(playingSong.songs.id);
   };
 
@@ -38,7 +39,7 @@ export default function LiveDashboard() {
     if (!sessionId) return;
     fetchQueue();
     const channel = supabase
-      .channel(`queue_${sessionId}`)
+      .channel(`queue_lyric_${sessionId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "queue_registrations", filter: `session_id=eq.${sessionId}` }, fetchQueue)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -52,13 +53,11 @@ export default function LiveDashboard() {
 
   const handleStop = async (queueId: string) => {
     await supabase.from("queue_registrations").update({ status: "done", actual_end: new Date().toISOString() }).eq("id", queueId);
-    const next = queue.find(item => item.status === "waiting" && item.id !== queueId);
+    const next = queue.find((item) => item.status === "waiting" && item.id !== queueId);
     if (next) setCurrentSongId(next.songs.id);
   };
 
-  const handleViewSong = (songId: string) => {
-    setCurrentSongId(songId);
-  };
+  const handleViewSong = (songId: string) => setCurrentSongId(songId);
 
   const handlePresent = async (url: string) => {
     await supabase.from("live_sessions").update({ presenting_lyric_url: url }).eq("id", sessionId);
@@ -70,30 +69,28 @@ export default function LiveDashboard() {
   };
 
   const saveNote = async () => {
-    await supabase.from("queue_registrations")
+    await supabase
+      .from("queue_registrations")
       .update({ actual_tone: noteDialog.tone, note: noteDialog.note, rating: noteDialog.rating })
       .eq("id", noteDialog.queueId);
     setNoteDialog({ ...noteDialog, isOpen: false });
     fetchQueue();
   };
 
-  const [queueOpen, setQueueOpen] = useState(false);
-
-  const currentSong = queue.find(q => q.songs?.id === currentSongId)?.songs;
-  const sheets = currentSong?.song_sheets ?? [];
-  const lyrics = currentSong?.song_lyrics ?? [];
-  const waitingCount = queue.filter(q => q.status === "waiting").length;
-
   const handleViewSongAndCollapse = (songId: string) => {
     handleViewSong(songId);
     setQueueOpen(false);
   };
 
+  const currentSong = queue.find((q) => q.songs?.id === currentSongId)?.songs;
+  const lyrics = currentSong?.song_lyrics ?? [];
+  const waitingCount = queue.filter((q) => q.status === "waiting").length;
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-6 font-sans">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
 
-        {/* Desktop sidebar — always visible on md+ */}
+        {/* Desktop sidebar */}
         <div className="hidden md:block md:w-1/3 shrink-0">
           <LiveList
             queue={queue}
@@ -104,7 +101,7 @@ export default function LiveDashboard() {
           />
         </div>
 
-        {/* Mobile drawer — slide in from left as overlay */}
+        {/* Mobile drawer */}
         {queueOpen && (
           <div className="md:hidden fixed inset-0 z-40 flex">
             <div className="w-80 max-w-[85vw] h-full overflow-y-auto bg-white dark:bg-gray-900 shadow-2xl">
@@ -116,22 +113,21 @@ export default function LiveDashboard() {
                 onOpenNote={setNoteDialog}
               />
             </div>
-            {/* Backdrop */}
             <div className="flex-1 bg-black/50" onClick={() => setQueueOpen(false)} />
           </div>
         )}
 
+        {/* Right area: LyricPanel + HopAmVietPanel side by side */}
         <div className="w-full md:w-2/3 flex flex-col gap-4">
-          <SheetPanel
-            key={`sheet-${currentSongId ?? "none"}`}
-            sheets={sheets}
-            hasSong={!!currentSongId}
-          />
           <LyricPanel
             key={`lyric-${currentSongId ?? "none"}`}
             lyrics={lyrics}
             onPresent={handlePresent}
             hasSong={!!currentSongId}
+          />
+          <HopAmVietPanel
+            songTitle={currentSong?.title ?? ""}
+            onPresent={handlePresent}
           />
         </div>
       </div>
@@ -139,7 +135,7 @@ export default function LiveDashboard() {
       {/* Mobile queue toggle FAB */}
       <button
         className="md:hidden fixed bottom-6 left-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-xl font-medium text-sm transition-colors"
-        onClick={() => setQueueOpen(v => !v)}
+        onClick={() => setQueueOpen((v) => !v)}
       >
         🎤 {waitingCount} chờ / {queue.length} tổng
       </button>

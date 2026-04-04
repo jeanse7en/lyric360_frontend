@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import vi from "../../../../lib/vi";
+import vi from "../../../../../lib/vi";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 

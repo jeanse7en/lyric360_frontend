@@ -1,0 +1,118 @@
+"use client";
+
+import { useState } from "react";
+
+type NoteDialogState = {
+  isOpen: boolean;
+  queueId: string;
+  tone: string;
+  note: string;
+  rating: number;
+};
+
+type Props = {
+  queue: any[];
+  onPlay: (queueId: string, songId: string) => void;
+  onStop: (queueId: string) => void;
+  onViewSong: (songId: string) => void;
+  onOpenNote: (state: NoteDialogState) => void;
+  onPresent?: (url: string) => void;
+};
+
+function getLyricEmbedUrl(item: any): string | null {
+  const lyric = item.songs?.song_lyrics?.find((l: any) => l.slide_drive_url);
+  return lyric ? lyric.slide_drive_url.replace(/\/edit.*$/, "/embed?rm=minimal") : null;
+}
+
+export default function LiveList({ queue, onPlay, onStop, onViewSong, onOpenNote, onPresent }: Props) {
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  const toggle = (id: string) => setOpenMenuId(prev => prev === id ? null : id);
+
+  return (
+    <div className="w-full bg-white dark:bg-gray-800 rounded-xl p-4 shadow-2xl overflow-y-auto max-h-[90vh]">
+      <div className="flex items-center gap-3 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <a href="/admin/live" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">← Quay lại</a>
+        <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400">Hàng Đợi Hát (Live)</h2>
+      </div>
+
+      <div className="space-y-2">
+        {queue.map((item, index) => {
+          const isOpen = openMenuId === item.id;
+          const embedUrl = getLyricEmbedUrl(item);
+
+          return (
+            <div key={item.id}>
+              {/* Row — clickable */}
+              <div
+                onClick={() => toggle(item.id)}
+                className={`p-3 rounded-lg border cursor-pointer transition-all select-none ${
+                  item.status === "playing"
+                    ? "bg-blue-50 dark:bg-blue-900 border-blue-400 dark:border-blue-500"
+                    : item.status === "done"
+                    ? "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-60"
+                    : isOpen
+                    ? "bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500"
+                    : "bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-gray-900 dark:text-white truncate">{index + 1}. {item.songs?.title}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {item.singer_name}
+                      {item.booker_phone && <span className="ml-2 font-mono">{item.booker_phone}</span>}
+                    </div>
+                  </div>
+                  <span className="text-gray-400 dark:text-gray-500 text-xs">{isOpen ? "▲" : "▼"}</span>
+                </div>
+              </div>
+
+              {/* Action row */}
+              {isOpen && (
+                <div className="flex gap-2 px-1 pt-1 pb-2 flex-wrap">
+                  {item.status === "waiting" && (
+                    <button
+                      onClick={() => {
+                        onPlay(item.id, item.songs.id);
+                        if (embedUrl && onPresent) onPresent(embedUrl);
+                        setOpenMenuId(null);
+                      }}
+                      className="flex-1 py-2 rounded-lg text-sm font-semibold bg-green-600 hover:bg-green-500 text-white transition-colors"
+                    >
+                      ▶ Diễn
+                    </button>
+                  )}
+                  {item.status === "playing" && (
+                    <button
+                      onClick={() => { onStop(item.id); setOpenMenuId(null); }}
+                      className="flex-1 py-2 rounded-lg text-sm font-semibold bg-red-600 hover:bg-red-500 text-white transition-colors"
+                    >
+                      🛑 Dừng
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { onViewSong(item.songs.id); setOpenMenuId(null); }}
+                    className="flex-1 py-2 rounded-lg text-sm font-medium bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-white transition-colors"
+                  >
+                    👀 Xem trước
+                  </button>
+                  <button
+                    onClick={() => {
+                      onOpenNote({ isOpen: true, queueId: item.id, tone: item.actual_tone || '', note: item.note || '', rating: item.rating || 5 });
+                      setOpenMenuId(null);
+                    }}
+                    className="flex-1 py-2 rounded-lg text-sm font-medium bg-blue-100 dark:bg-blue-700 hover:bg-blue-200 dark:hover:bg-blue-600 text-blue-800 dark:text-white transition-colors"
+                  >
+                    📝 Ghi chú
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {queue.length === 0 && <p className="text-gray-400 italic text-center py-4">Chưa có ai đăng ký</p>}
+      </div>
+    </div>
+  );
+}

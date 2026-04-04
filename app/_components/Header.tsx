@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const NAV = [
-  { label: "Live", href: "/live" },
-  { label: "Bài hát", href: "/songs" },
+  { label: "Live", href: "/admin/live" },
+  { label: "Bài hát", href: "/admin/songs" },
 ];
 
 function ThemeToggle() {
@@ -37,8 +37,10 @@ function ThemeToggle() {
   );
 }
 
-export default function Header() {
+export default function Header({ hideNav }: { hideNav?: boolean }) {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   return (
     <header className="bg-gray-900 border-b border-gray-700 sticky top-0 z-40">
@@ -47,7 +49,7 @@ export default function Header() {
           🎵 Lyric360
         </Link>
         <nav className="flex items-center gap-1">
-          {NAV.map(({ label, href }) => {
+          {!hideNav && NAV.map(({ label, href }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (
               <Link
@@ -63,6 +65,18 @@ export default function Header() {
               </Link>
             );
           })}
+          {hideNav && mounted && (
+            <Link
+              href="/user/lyric"
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                pathname.startsWith("/user/lyric")
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-400 hover:text-white hover:bg-gray-800"
+              }`}
+            >
+              Lịch sử
+            </Link>
+          )}
           <ThemeToggle />
         </nav>
       </div>

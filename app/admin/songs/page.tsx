@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import SongListItem from "./_components/SongListItem";
-import vi from "../../lib/vi";
+import vi from "../../../lib/vi";
 import SongFilter, { type VerifyStatus } from "./_components/SongFilter";
-import Header from "../_components/Header";
-import Footer from "../_components/Footer";
+import Header from "../../_components/Header";
+import Footer from "../../_components/Footer";
 import CreateSongModal from "./_components/CreateSongModal";
 
 type Song = {
@@ -25,7 +25,7 @@ function buildUrl(query: string, verifyStatus: VerifyStatus) {
   if (query) params.set("q", query);
   if (verifyStatus) params.set("verifyStatus", verifyStatus);
   const qs = params.toString();
-  return `/songs${qs ? `?${qs}` : ""}`;
+  return `/admin/songs${qs ? `?${qs}` : ""}`;
 }
 
 function SongsPageInner() {

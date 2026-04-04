@@ -6,7 +6,7 @@ const vi = {
     planned: '📅 ',
   },
   sheetPanel: {
-    title: 'Màn Hình Sheet Nhạc',
+    title: 'Sheet Nhạc',
     addBtn: '+',
     fullscreenBtn: '🔲',
     noSong: 'Chưa chọn bài hát',
@@ -29,7 +29,7 @@ const vi = {
     fullscreenTitle: 'Sheet Nhạc',
   },
   lyricPanel: {
-    title: 'Màn Hình Lời Bài Hát',
+    title: 'Lời Bài Hát',
     addBtn: '+ Thêm lời',
     fullscreenBtn: '🔲',
     noSong: 'Chưa chọn bài hát',

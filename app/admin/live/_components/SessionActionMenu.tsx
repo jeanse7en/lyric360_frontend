@@ -51,7 +51,7 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
         {session.status === "live" && (
           <>
             <button
-              onClick={() => router.push(`/live/${session.id}`)}
+              onClick={() => router.push(`/admin/live/${session.id}`)}
               className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
             >
               🎵 Vào trang Live
@@ -66,7 +66,7 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
         )}
         {session.status === "ended" && (
           <button
-            onClick={() => router.push(`/live/${session.id}`)}
+            onClick={() => router.push(`/admin/live/${session.id}`)}
             className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-600 hover:bg-gray-500 text-white transition-colors"
           >
             📋 Xem lại

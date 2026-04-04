@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import vi from "../../../lib/vi";
+import vi from "../../../../lib/vi";
 
 type Props = {
   isOpen: boolean;
@@ -32,7 +32,7 @@ export default function CreateSongModal({ isOpen, onClose }: Props) {
       });
       if (!res.ok) { setError(vi.createSong.errCannotCreate); return; }
       const data = await res.json();
-      router.push(`/songs/${data.id}/edit`);
+      router.push(`/admin/songs/${data.id}/edit`);
     } finally { setCreating(false); }
   };
 

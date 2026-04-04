@@ -18,7 +18,7 @@ export default function SongListItem({ song }: Props) {
 
   return (
     <div
-      onClick={() => router.push(`/songs/${song.id}`)}
+      onClick={() => router.push(`/admin/songs/${song.id}`)}
       className="relative flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
     >
       <div className="flex-1 min-w-0">
