@@ -7,6 +7,7 @@ type Song = { id: string; title: string; author?: string };
 type Props = {
   selectedSong: Song | null;
   onSelect: (song: Song | null) => void;
+  onInputChange?: (value: string) => void;
   disabled?: boolean;
   bookedSongIds?: string[];
   recentSongs?: Song[];
@@ -14,7 +15,7 @@ type Props = {
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
-export default function SongSearch({ selectedSong, onSelect, disabled, bookedSongIds = [], recentSongs = [] }: Props) {
+export default function SongSearch({ selectedSong, onSelect, onInputChange, disabled, bookedSongIds = [], recentSongs = [] }: Props) {
   const [inputValue, setInputValue] = useState("");
   const [results, setResults] = useState<Song[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -67,7 +68,7 @@ export default function SongSearch({ selectedSong, onSelect, disabled, bookedSon
         value={inputValue}
         disabled={disabled}
         onFocus={() => !disabled && setIsOpen(true)}
-        onChange={e => { setInputValue(e.target.value); onSelect(null); }}
+        onChange={e => { setInputValue(e.target.value); onSelect(null); onInputChange?.(e.target.value); }}
         className={`w-full px-4 py-2 border rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors ${
           disabled
             ? "bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-60"

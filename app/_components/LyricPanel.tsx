@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import FullscreenOverlay from "./FullscreenOverlay";
 import DeleteConfirmModal from "./DeleteConfirmModal";
 import AddLyricModal from "./lyric-panel/AddLyricModal";
 import { verifyLyric, deleteLyric, type Lyric } from "./lyric-panel/lyricService";
+import LyricHtmlPanel, { buildLyricHtml } from "./LyricHtmlPanel";
+import { DEFAULT_STYLE, type LyricHtmlStyle } from "./LyricHtmlStyleBar";
 import vi from "../../lib/vi";
 
 export type { Lyric };
@@ -16,6 +18,8 @@ type Props = {
   lyrics: Lyric[];
   onLyricsChange?: (lyrics: Lyric[]) => void;
   onPresent?: (url: string) => void;
+  /** Broadcast raw HTML to /live/lyric via Supabase. Enables 📺 button in LyricHtmlPanel. */
+  onPresentHtml?: (html: string) => void;
   hasSong: boolean;
   canEdit?: boolean;
 };
@@ -25,7 +29,7 @@ function toEditUrl(url: string) { return url.replace(/\/(edit|embed)[^/]*.*/, "/
 
 export default function LyricPanel({
   songId, songTitle = "", songAuthor = "",
-  lyrics, onLyricsChange, onPresent,
+  lyrics, onLyricsChange, onPresent, onPresentHtml,
   hasSong, canEdit = false,
 }: Props) {
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -33,6 +37,23 @@ export default function LyricPanel({
   const [showAdd, setShowAdd] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
+
+  // ── HTML lyric panel state ────────────────────────────────────────────────
+  const [htmlStyle, setHtmlStyle] = useState<LyricHtmlStyle>(DEFAULT_STYLE);
+  const [htmlPresenting, setHtmlPresenting] = useState(false);
+  const htmlPresentingRef = useRef(htmlPresenting);
+  htmlPresentingRef.current = htmlPresenting;
+
+  // Debounced live re-broadcast when style changes while HTML lyric is on screen
+  useEffect(() => {
+    if (!htmlPresenting || !onPresentHtml) return;
+    const text = lyrics[selectedIdx]?.lyrics ?? "";
+    if (!text) return;
+    const t = setTimeout(() => {
+      onPresentHtml(buildLyricHtml(songTitle, songAuthor || null, text, htmlStyle));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [htmlStyle, htmlPresenting]); // intentionally omit stable refs
 
   const selected = lyrics[selectedIdx];
   const src = selected?.slide_drive_url
@@ -166,6 +187,26 @@ export default function LyricPanel({
 
       {fullscreen && src && (
         <FullscreenOverlay url={src} title={vi.lyricPanel.fullscreenTitle} onClose={() => setFullscreen(false)} />
+      )}
+
+      {/* ── HTML lyric panel (shown only when a song is loaded) ── */}
+      {hasSong && (
+        <LyricHtmlPanel
+          song={{ id: songId, title: songTitle, author: songAuthor }}
+          lyricId={lyrics[selectedIdx]?.id}
+          lyricsText={lyrics[selectedIdx]?.lyrics ?? ""}
+          onLyricsTextChange={(text) => {
+            onLyricsChange?.(lyrics.map((l, i) => i === selectedIdx ? { ...l, lyrics: text } : l));
+          }}
+          isSelected={htmlPresenting}
+          onSelect={() => setHtmlPresenting(true)}
+          onPresentHtml={onPresentHtml ? (html) => {
+            setHtmlPresenting(true);
+            onPresentHtml(html);
+          } : undefined}
+          style={htmlStyle}
+          onStyleChange={setHtmlStyle}
+        />
       )}
 
       {showAdd && songId && (

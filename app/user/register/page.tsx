@@ -24,6 +24,7 @@ export default function MobileRegistration() {
   const [tablePos, setTablePos] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedSong, setSelectedSong] = useState<any>(null);
+  const [songInputValue, setSongInputValue] = useState("");
   const [tone, setTone] = useState("");
   const [selectedDrinks, setSelectedDrinks] = useState<string[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -89,13 +90,13 @@ export default function MobileRegistration() {
       .catch(() => {});
   }, [selectedSessionId, userId]);
 
-  const songSearchReady = mounted && !!userId && !!selectedSessionId;
+  const songSearchReady = mounted && !!singerName && !!selectedSessionId;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userId) { setError("Vui lòng chọn tên của bạn!"); return; }
+    if (!singerName) { setError("Vui lòng nhập tên của bạn!"); return; }
     if (!selectedSessionId) { setError("Vui lòng chọn buổi diễn!"); return; }
-    if (!selectedSong) { setError("Vui lòng chọn bài hát!"); return; }
+    if (!selectedSong && !songInputValue.trim()) { setError("Vui lòng chọn hoặc nhập tên bài hát!"); return; }
     if (userExistingReg) return; // blocked by UI
     setError("");
     setSubmitting(true);
@@ -105,7 +106,8 @@ export default function MobileRegistration() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           session_id: selectedSessionId,
-          song_id: selectedSong.id,
+          song_id: selectedSong?.id || undefined,
+          free_text_song_name: !selectedSong && songInputValue.trim() ? songInputValue.trim() : undefined,
           singer_name: singerName,
           booker_phone: phone,
           table_position: tablePos,
@@ -209,6 +211,7 @@ export default function MobileRegistration() {
                 <SongSearch
                   selectedSong={selectedSong}
                   onSelect={setSelectedSong}
+                  onInputChange={setSongInputValue}
                   disabled={!songSearchReady}
                   bookedSongIds={bookedSongIds}
                   recentSongs={recentSongs}

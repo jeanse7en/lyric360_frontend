@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import HopAmVietPanel from "../../lyric/_components/HopAmVietPanel";
+import LyricHtmlPanel, { buildLyricHtml, openHtmlWindow } from "./LyricHtmlPanel";
+import { DEFAULT_STYLE, LyricHtmlStyle } from "./LyricHtmlStyleBar";
+
 
 type NoteDialogState = {
   isOpen: boolean;
@@ -49,10 +52,13 @@ export default function SongDrawer({
   const sheetPreviewUrl = selectedSheet ? toPreviewUrl(selectedSheet.sheet_drive_url) : null;
 
   // ── Lyric selection ──────────────────────────────────────────────────────
-  // source: "db" | "hopamviet" | null
-  const [lyricSource, setLyricSource] = useState<"db" | "hopamviet" | null>(null);
+  // source: "db" | "hopamviet" | "html" | null
+  const [lyricSource, setLyricSource] = useState<"db" | "hopamviet" | "html" | null>(null);
   const [dbLyricIdx, setDbLyricIdx] = useState(0);
   const [hopAmVietUrl, setHopAmVietUrl] = useState<string | null>(null);
+
+  // HTML lyric style
+  const [htmlStyle, setHtmlStyle] = useState<LyricHtmlStyle>(DEFAULT_STYLE);
 
   // Auto-select first DB lyric with a slide URL; fall back to hopamviet intent
   useEffect(() => {
@@ -75,10 +81,18 @@ export default function SongDrawer({
     lyricSource === "hopamviet" ? hopAmVietUrl :
     null;
 
+  // The lyrics text used for HTML generation (from selected DB lyric)
+  const htmlLyricsText = dbLyrics.find((l) => l.lyrics)?.lyrics ?? "";
+
   // ── Actions ──────────────────────────────────────────────────────────────
   const handlePlay = () => {
     onPlay(item.id, song.id);
-    if (activeLyricUrl) onPresent(activeLyricUrl);
+    if (lyricSource === "html" && htmlLyricsText) {
+      const html = buildLyricHtml(song?.title ?? "", song?.author ?? null, htmlLyricsText, htmlStyle);
+      openHtmlWindow(html);
+    } else if (activeLyricUrl) {
+      onPresent(activeLyricUrl);
+    }
     if (sheetPreviewUrl) onShowSheetFullscreen(sheetPreviewUrl);
     onClose();
   };
@@ -222,6 +236,17 @@ export default function SongDrawer({
               )}
             </div>
           </div>
+
+          {/* ── Panel 3: HTML Lyric ── */}
+          <LyricHtmlPanel
+            song={song}
+            lyricId={dbLyrics.find((l) => l.lyrics)?.id}
+            lyricsText={htmlLyricsText}
+            isSelected={lyricSource === "html"}
+            onSelect={() => setLyricSource("html")}
+            style={htmlStyle}
+            onStyleChange={setHtmlStyle}
+          />
 
           {/* ── Panel 2: HopAmViet ── */}
           <div className={`rounded-xl border-2 transition-colors ${

@@ -25,7 +25,7 @@ export default function LiveLyricDashboard() {
     const { data } = await supabase
       .from("queue_registrations")
       .select(`id, singer_name, booker_phone, table_position, status, actual_tone, note, rating, created_at,
-        songs ( id, title, author, song_sheets ( id, sheet_drive_url, tone_male, tone_female, verified_at ), song_lyrics ( id, slide_drive_url, source_lyric, verified_at ) )`)
+        songs ( id, title, author, song_sheets ( id, sheet_drive_url, tone_male, tone_female, verified_at ), song_lyrics ( id, lyrics, slide_drive_url, source_lyric, verified_at ) )`)
       .eq("session_id", sessionId)
       .order("created_at", { ascending: true });
 
@@ -60,11 +60,20 @@ export default function LiveLyricDashboard() {
   const handleViewSong = (songId: string) => setCurrentSongId(songId);
 
   const handlePresent = async (url: string) => {
-    await supabase.from("live_sessions").update({ presenting_lyric_url: url }).eq("id", sessionId);
+    await supabase.from("live_sessions").update({ presenting_lyric_url: url, presenting_lyric_html: null }).eq("id", sessionId);
     await supabase.channel(`lyric_present_${sessionId}`).send({
       type: "broadcast",
       event: "present",
       payload: { url },
+    });
+  };
+
+  const handlePresentHtml = async (html: string) => {
+    await supabase.from("live_sessions").update({ presenting_lyric_html: html, presenting_lyric_url: null }).eq("id", sessionId);
+    await supabase.channel(`lyric_present_${sessionId}`).send({
+      type: "broadcast",
+      event: "present",
+      payload: { html },
     });
   };
 
@@ -123,6 +132,7 @@ export default function LiveLyricDashboard() {
             key={`lyric-${currentSongId ?? "none"}`}
             lyrics={lyrics}
             onPresent={handlePresent}
+            onPresentHtml={handlePresentHtml}
             hasSong={!!currentSongId}
           />
           <HopAmVietPanel

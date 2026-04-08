@@ -27,7 +27,7 @@ export default function CompactLivePage() {
       .select(`id, singer_name, booker_phone, table_position, status, actual_tone, note, rating, created_at,
         songs ( id, title, author,
           song_sheets ( id, sheet_drive_url, tone_male, tone_female, verified_at ),
-          song_lyrics ( id, slide_drive_url, source_lyric, verified_at )
+          song_lyrics ( id, lyrics, slide_drive_url, source_lyric, verified_at )
         )`)
       .eq("session_id", sessionId)
       .order("created_at", { ascending: true });
