@@ -9,6 +9,7 @@ export { DEFAULT_STYLE, type LyricHtmlStyle };
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
+
 // Build URL params from style so /live/lyric can reconstruct the exact style
 export function styleToParams(style: LyricHtmlStyle): string {
   const p = new URLSearchParams({
