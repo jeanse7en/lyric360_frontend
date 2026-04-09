@@ -26,8 +26,8 @@ export const DEFAULT_STYLE: LyricHtmlStyle = {
   color1: "#FFD700",
   color2: "#FFFFFF",
   fontFamily: "Arial",
-  fontSize: 44,
-  singlePage: false,
+  fontSize: 40,
+  singlePage: true,
 };
 
 type Props = {
@@ -67,16 +67,18 @@ export default function LyricHtmlStyleBar({ style, onChange }: Props) {
         {FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
       </select>
 
-      {/* Font size */}
-      <label className="flex items-center gap-1.5">
-        <span>Cỡ</span>
-        <input
-          type="number" min={16} max={120} step={4}
-          value={style.fontSize}
-          onChange={(e) => set({ fontSize: Number(e.target.value) })}
-          className="w-14 bg-gray-700 text-white rounded px-2 py-1 text-xs text-center"
-        />
-      </label>
+      {/* Font size stepper */}
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => set({ fontSize: Math.max(16, style.fontSize - 2) })}
+          className="w-7 h-7 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold leading-none transition-colors select-none"
+        >−</button>
+        <span className="w-9 text-center text-white tabular-nums">{style.fontSize}</span>
+        <button
+          onClick={() => set({ fontSize: Math.min(120, style.fontSize + 2) })}
+          className="w-7 h-7 flex items-center justify-center rounded bg-gray-700 hover:bg-gray-600 text-white text-sm font-bold leading-none transition-colors select-none"
+        >+</button>
+      </div>
 
       {/* Single page toggle */}
       <button

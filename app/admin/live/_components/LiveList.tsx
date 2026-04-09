@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type NoteDialogState = {
   isOpen: boolean;
@@ -17,15 +18,24 @@ type Props = {
   onViewSong: (songId: string) => void;
   onOpenNote: (state: NoteDialogState) => void;
   onPresent?: (url: string) => void;
+  onPresentHtml?: (lyricId: string) => void;
 };
 
-function getLyricEmbedUrl(item: any): string | null {
-  const lyric = item.songs?.song_lyrics?.find((l: any) => l.slide_drive_url);
-  return lyric ? lyric.slide_drive_url.replace(/\/edit.*$/, "/embed?rm=minimal") : null;
+const DRINK_LABELS: Record<string, string> = {
+  bia_tiger: "Bia Tiger", bia_heineken: "Bia Heineken", bia_333: "Bia 333",
+  ruou_vang_do: "Vang đỏ", ruou_vang_trang: "Vang trắng",
+  coca_cola: "Coca", pepsi: "Pepsi", nuoc_suoi: "Nước suối",
+  tra_da: "Trà đá", nuoc_cam: "Nước cam",
+};
+
+function getHtmlLyricId(item: any): string | null {
+  const lyric = item.songs?.song_lyrics?.find((l: any) => l.lyrics);
+  return lyric?.id ?? null;
 }
 
-export default function LiveList({ queue, onPlay, onStop, onViewSong, onOpenNote, onPresent }: Props) {
+export default function LiveList({ queue, onPlay, onStop, onViewSong, onOpenNote, onPresent, onPresentHtml }: Props) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const router = useRouter();
 
   const toggle = (id: string) => setOpenMenuId(prev => prev === id ? null : id);
 
@@ -39,7 +49,7 @@ export default function LiveList({ queue, onPlay, onStop, onViewSong, onOpenNote
       <div className="space-y-2">
         {queue.map((item, index) => {
           const isOpen = openMenuId === item.id;
-          const embedUrl = getLyricEmbedUrl(item);
+          const htmlLyricId = getHtmlLyricId(item);
 
           return (
             <div key={item.id}>
@@ -62,6 +72,11 @@ export default function LiveList({ queue, onPlay, onStop, onViewSong, onOpenNote
                     <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                       {item.singer_name}
                       {item.booker_phone && <span className="ml-2 font-mono">{item.booker_phone}</span>}
+                      {item.drinks?.length > 0 && (
+                        <span className="ml-2 text-blue-400">
+                          🥤 {item.drinks.map((d: string) => DRINK_LABELS[d] ?? d).join(", ")}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <span className="text-gray-400 dark:text-gray-500 text-xs">{isOpen ? "▲" : "▼"}</span>
@@ -75,7 +90,7 @@ export default function LiveList({ queue, onPlay, onStop, onViewSong, onOpenNote
                     <button
                       onClick={() => {
                         onPlay(item.id, item.songs.id);
-                        if (embedUrl && onPresent) onPresent(embedUrl);
+                        if (htmlLyricId && onPresentHtml) onPresentHtml(htmlLyricId);
                         setOpenMenuId(null);
                       }}
                       className="flex-1 py-2 rounded-lg text-sm font-semibold bg-green-600 hover:bg-green-500 text-white transition-colors"
@@ -105,6 +120,12 @@ export default function LiveList({ queue, onPlay, onStop, onViewSong, onOpenNote
                     className="flex-1 py-2 rounded-lg text-sm font-medium bg-blue-100 dark:bg-blue-700 hover:bg-blue-200 dark:hover:bg-blue-600 text-blue-800 dark:text-white transition-colors"
                   >
                     📝 Ghi chú
+                  </button>
+                  <button
+                    onClick={() => { router.push(`/admin/songs/${item.songs.id}`); setOpenMenuId(null); }}
+                    className="flex-1 py-2 rounded-lg text-sm font-medium bg-purple-100 dark:bg-purple-800 hover:bg-purple-200 dark:hover:bg-purple-700 text-purple-800 dark:text-white transition-colors"
+                  >
+                    ✏️ Sửa bài
                   </button>
                 </div>
               )}

@@ -43,5 +43,6 @@ export async function verifyLyric(songId: string, lyricId: string): Promise<void
 }
 
 export async function deleteLyric(songId: string, lyricId: string): Promise<void> {
-  await fetch(`${API}/api/songs/${songId}/lyrics/${lyricId}`, { method: "DELETE" });
+  const res = await fetch(`${API}/api/songs/${songId}/lyrics/${lyricId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("delete_failed");
 }

@@ -32,7 +32,7 @@ export default function CreateSongModal({ isOpen, onClose }: Props) {
       });
       if (!res.ok) { setError(vi.createSong.errCannotCreate); return; }
       const data = await res.json();
-      router.push(`/admin/songs/${data.id}/edit`);
+      router.push(`/admin/songs/${data.id}`);
     } finally { setCreating(false); }
   };
 

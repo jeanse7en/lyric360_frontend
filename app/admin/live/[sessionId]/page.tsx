@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import LiveList from "../_components/LiveList";
-import { styleToParams, type LyricHtmlStyle } from "../../../_components/LyricHtmlPanel";
+import { styleToParams, DEFAULT_STYLE, type LyricHtmlStyle } from "../../../_components/LyricHtmlPanel";
 import SheetPanel from "../../../_components/SheetPanel";
 import LyricPanel from "../../../_components/LyricPanel";
 import NoteDialog from "../_components/NoteDialog";
@@ -24,7 +24,7 @@ export default function LiveDashboard() {
   const fetchQueue = async () => {
     const { data } = await supabase
       .from("queue_registrations")
-      .select(`id, singer_name, booker_phone, table_position, status, actual_tone, note, rating, created_at,
+      .select(`id, singer_name, booker_phone, table_position, drinks, status, actual_tone, note, rating, created_at,
         songs ( id, title, author, song_sheets ( id, sheet_drive_url, tone_male, tone_female, verified_at ), song_lyrics ( id, lyrics, slide_drive_url, source_lyric, verified_at ) )`)
       .eq("session_id", sessionId)
       .order("created_at", { ascending: true });
@@ -70,6 +70,8 @@ export default function LiveDashboard() {
     });
   };
 
+  const handlePresentHtml = (lyricId: string) => handlePresentConfig(lyricId, DEFAULT_STYLE);
+
   const handlePresentConfig = async (lyricId: string, style: LyricHtmlStyle) => {
     const url = `/live/lyric?lyric_id=${lyricId}&${styleToParams(style)}`;
     await supabase.from("live_sessions").update({ presenting_lyric_url: url }).eq("id", sessionId);
@@ -113,6 +115,7 @@ export default function LiveDashboard() {
             onViewSong={handleViewSong}
             onOpenNote={setNoteDialog}
             onPresent={handlePresent}
+            onPresentHtml={handlePresentHtml}
           />
         </div>
 
@@ -126,6 +129,7 @@ export default function LiveDashboard() {
                 onStop={handleStop}
                 onViewSong={handleViewSongAndCollapse}
                 onOpenNote={setNoteDialog}
+                onPresentHtml={handlePresentHtml}
               />
             </div>
             {/* Backdrop */}
@@ -142,10 +146,8 @@ export default function LiveDashboard() {
           <LyricPanel
             key={`lyric-${currentSongId ?? "none"}`}
             lyrics={lyrics}
-            onPresent={handlePresent}
             onPresentConfig={handlePresentConfig}
             hasSong={!!currentSongId}
-            hideSlide
           />
         </div>
       </div>

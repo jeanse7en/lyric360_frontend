@@ -26,5 +26,6 @@ export async function verifySheet(songId: string, sheetId: string): Promise<void
 }
 
 export async function deleteSheet(songId: string, sheetId: string): Promise<void> {
-  await fetch(`${API}/api/songs/${songId}/sheets/${sheetId}`, { method: "DELETE" });
+  const res = await fetch(`${API}/api/songs/${songId}/sheets/${sheetId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("delete_failed");
 }
