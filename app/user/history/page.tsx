@@ -198,7 +198,7 @@ function UserLyricContent() {
       const stored = localStorage.getItem("lyric360_user_id");
       if (stored) {
         setUserId(stored);
-        router.replace(`/user/lyric?user_id=${stored}`);
+        router.replace(`/user/history?user_id=${stored}`);
       }
     }
   }, [urlUserId]);
@@ -236,7 +236,7 @@ function UserLyricContent() {
   const selectUser = (u: UserSuggestion) => {
     localStorage.setItem("lyric360_user_id", u.id);
     setUserId(u.id);
-    router.replace(`/user/lyric?user_id=${u.id}`);
+    router.replace(`/user/history?user_id=${u.id}`);
     setSuggestions([]);
     setSearchName("");
   };
@@ -304,7 +304,7 @@ function UserLyricContent() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Bài hát của tôi</h1>
           <button
-            onClick={() => { setUserId(null); localStorage.removeItem("lyric360_user_id"); router.replace("/user/lyric"); }}
+            onClick={() => { setUserId(null); localStorage.removeItem("lyric360_user_id"); router.replace("/user/history"); }}
             className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
           >
             Đổi người

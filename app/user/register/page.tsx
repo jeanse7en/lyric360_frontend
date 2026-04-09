@@ -146,7 +146,7 @@ export default function MobileRegistration() {
             </div>
             <div className="flex flex-col gap-3">
               <Link
-                href={`/user/lyric?user_id=${success.userId}`}
+                href={`/user/history?user_id=${success.userId}`}
                 className="w-full py-3 rounded-lg bg-green-600 hover:bg-green-500 text-white font-semibold transition-colors"
               >
                 🎵 Xem lời bài hát của tôi
@@ -195,7 +195,7 @@ export default function MobileRegistration() {
             {/* Duplicate registration warning */}
             {userExistingReg && (
               <Link
-                href={`/user/lyric?user_id=${userId}`}
+                href={`/user/history?user_id=${userId}`}
                 className="flex items-center gap-2 px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-sm hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
               >
                 <span className="text-lg">⚠️</span>

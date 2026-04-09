@@ -67,9 +67,9 @@ export default function Header({ hideNav }: { hideNav?: boolean }) {
           })}
           {hideNav && mounted && (
             <Link
-              href="/user/lyric"
+              href="/user/history"
               className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                pathname.startsWith("/user/lyric")
+                pathname.startsWith("/user/history")
                   ? "bg-blue-600 text-white"
                   : "text-gray-400 hover:text-white hover:bg-gray-800"
               }`}
