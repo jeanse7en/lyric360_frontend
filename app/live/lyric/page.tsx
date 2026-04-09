@@ -38,7 +38,6 @@ async function fetchLyricById(lyricId: string): Promise<{ text: string; title: s
     .from("song_lyrics")
     .select("lyrics, songs(title, author)")
     .eq("id", lyricId)
-    .is("deleted_at", null)
     .maybeSingle();
   if (!data) return null;
   const song = Array.isArray(data.songs) ? data.songs[0] : data.songs;
