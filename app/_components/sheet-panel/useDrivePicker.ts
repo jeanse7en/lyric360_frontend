@@ -50,6 +50,7 @@ export function useDrivePicker(onPick: (url: string) => void) {
             .addView(window.google.picker.ViewId.DOCS)
             .setOAuthToken(tokenResponse.access_token)
             .setDeveloperKey(GOOGLE_API_KEY)
+            .setOrigin(window.location.origin)
             .setCallback((data: any) => {
               if (data.action === window.google.picker.Action.PICKED) {
                 onPick(`https://drive.google.com/file/d/${data.docs[0].id}/view`);

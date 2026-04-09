@@ -99,7 +99,7 @@ function UserLyricContent() {
             type="text"
             value={searchName}
             onChange={e => handleSearchChange(e.target.value)}
-            placeholder="Nhập tên của bạn..."
+            placeholder="Nhập tên hoặc số điện thoại..."
             className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
             autoComplete="off"
           />

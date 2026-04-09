@@ -18,10 +18,15 @@ type Session = {
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
-function today() { return new Date().toISOString().slice(0, 10); }
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
+  // Parse date-only strings (YYYY-MM-DD) as local time to avoid UTC-offset shift
+  const [year, month, day] = d.slice(0, 10).split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 const STATUS_BADGE: Record<string, string> = {

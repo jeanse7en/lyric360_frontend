@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import FullscreenOverlay from "./FullscreenOverlay";
 import DeleteConfirmModal from "./DeleteConfirmModal";
 import AddLyricModal from "./lyric-panel/AddLyricModal";
+import LyricSlidePanel from "./lyric-panel/LyricSlidePanel";
 import { verifyLyric, deleteLyric, type Lyric } from "./lyric-panel/lyricService";
-import LyricHtmlPanel, { buildLyricHtml } from "./LyricHtmlPanel";
-import { DEFAULT_STYLE, type LyricHtmlStyle } from "./LyricHtmlStyleBar";
+import LyricHtmlPanel, { DEFAULT_STYLE, type LyricHtmlStyle } from "./LyricHtmlPanel";
 import vi from "../../lib/vi";
 
 export type { Lyric };
@@ -18,10 +18,11 @@ type Props = {
   lyrics: Lyric[];
   onLyricsChange?: (lyrics: Lyric[]) => void;
   onPresent?: (url: string) => void;
-  /** Broadcast raw HTML to /live/lyric via Supabase. Enables 📺 button in LyricHtmlPanel. */
-  onPresentHtml?: (html: string) => void;
+  /** Present lyric by storing URL params — enables 📺 button in LyricHtmlPanel. */
+  onPresentConfig?: (lyricId: string, style: LyricHtmlStyle) => void;
   hasSong: boolean;
   canEdit?: boolean;
+  hideSlide?: boolean;
 };
 
 function toEmbedUrl(url: string) { return url.replace(/\/edit.*/, "/embed?rm=minimal"); }
@@ -29,8 +30,8 @@ function toEditUrl(url: string) { return url.replace(/\/(edit|embed)[^/]*.*/, "/
 
 export default function LyricPanel({
   songId, songTitle = "", songAuthor = "",
-  lyrics, onLyricsChange, onPresent, onPresentHtml,
-  hasSong, canEdit = false,
+  lyrics, onLyricsChange, onPresent, onPresentConfig,
+  hasSong, canEdit = false, hideSlide = false,
 }: Props) {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [editMode, setEditMode] = useState(false);
@@ -41,25 +42,11 @@ export default function LyricPanel({
   // ── HTML lyric panel state ────────────────────────────────────────────────
   const [htmlStyle, setHtmlStyle] = useState<LyricHtmlStyle>(DEFAULT_STYLE);
   const [htmlPresenting, setHtmlPresenting] = useState(false);
-  const htmlPresentingRef = useRef(htmlPresenting);
-  htmlPresentingRef.current = htmlPresenting;
-
-  // Debounced live re-broadcast when style changes while HTML lyric is on screen
-  useEffect(() => {
-    if (!htmlPresenting || !onPresentHtml) return;
-    const text = lyrics[selectedIdx]?.lyrics ?? "";
-    if (!text) return;
-    const t = setTimeout(() => {
-      onPresentHtml(buildLyricHtml(songTitle, songAuthor || null, text, htmlStyle));
-    }, 400);
-    return () => clearTimeout(t);
-  }, [htmlStyle, htmlPresenting]); // intentionally omit stable refs
 
   const selected = lyrics[selectedIdx];
   const src = selected?.slide_drive_url
     ? (editMode ? toEditUrl(selected.slide_drive_url) : toEmbedUrl(selected.slide_drive_url))
     : null;
-  const editUrl = selected?.slide_drive_url ? toEditUrl(selected.slide_drive_url) : undefined;
 
   const handleLyricSaved = (lyric: Lyric) => {
     const existing = lyrics.findIndex(l => l.id === lyric.id);
@@ -92,98 +79,52 @@ export default function LyricPanel({
 
   return (
     <>
-      <div className="bg-gray-800 rounded-xl p-4 shadow-2xl h-[40vh] flex flex-col">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="font-bold text-pink-400">{vi.lyricPanel.title}</h3>
-          <div className="flex gap-2">
-            {canEdit && songId && (
-              <button onClick={() => setShowAdd(true)} className="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-sm text-white transition-colors">
-                {vi.lyricPanel.addBtn}
-              </button>
-            )}
-            {src && (
-              <button onClick={() => setFullscreen(true)} className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm text-white transition-colors">
-                {vi.lyricPanel.fullscreenBtn}
-              </button>
-            )}
-          </div>
-        </div>
+      {/*<div className="bg-gray-800 rounded-xl p-4 shadow-2xl h-[40vh] flex flex-col">*/}
+      {/*  /!* Header *!/*/}
+      {/*  <div className="flex justify-between items-center mb-2">*/}
+      {/*    <h3 className="font-bold text-pink-400">{vi.lyricPanel.title}</h3>*/}
+      {/*    <div className="flex gap-2">*/}
+      {/*      {canEdit && songId && (*/}
+      {/*        <button onClick={() => setShowAdd(true)} className="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-sm text-white transition-colors">*/}
+      {/*          {vi.lyricPanel.addBtn}*/}
+      {/*        </button>*/}
+      {/*      )}*/}
+      {/*      {src && (*/}
+      {/*        <button onClick={() => setFullscreen(true)} className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm text-white transition-colors">*/}
+      {/*          {vi.lyricPanel.fullscreenBtn}*/}
+      {/*        </button>*/}
+      {/*      )}*/}
+      {/*    </div>*/}
+      {/*  </div>*/}
 
-        {/* Lyric tabs + edit controls on the same row */}
-        {(lyrics.length > 0 || (canEdit && selected)) && (
-          <div className="flex gap-2 mb-2 flex-wrap items-center justify-between">
-            {/* Tabs (left) */}
-            <div className="flex gap-2 flex-wrap items-center">
-              {lyrics.map((lyric, i) => {
-                const embedUrl = lyric.slide_drive_url ? toEmbedUrl(lyric.slide_drive_url) : null;
-                return (
-                  <div key={lyric.id} className="flex gap-px">
-                    <button
-                      onClick={() => { setSelectedIdx(i); setEditMode(false); }}
-                      className={`px-3 py-1 text-xs font-medium transition-colors ${
-                        onPresent ? "rounded-l" : "rounded"
-                      } ${selectedIdx === i ? "bg-pink-500 text-white" : "bg-gray-700 hover:bg-gray-600 text-white"}`}
-                    >
-                      {i + 1}
-                      {lyric.source_lyric === "AI" && <span className="ml-1 text-purple-300">·AI</span>}
-                      {lyric.verified_at && <span className="ml-1 text-green-400">✓</span>}
-                    </button>
-                    {onPresent && embedUrl && (
-                      <button
-                        onClick={() => onPresent(embedUrl)}
-                        className="px-2 py-1 rounded-r text-xs font-medium bg-green-700 hover:bg-green-600 text-white transition-colors"
-                        title={vi.lyricPanel.presentTitle}
-                      >
-                        📺
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+      {/*  /!* Lyric tabs + edit controls on the same row *!/*/}
+      {/*  {!hideSlide && (lyrics.length > 0 || (canEdit && selected)) && (*/}
+      {/*    <LyricSlidePanel*/}
+      {/*      lyrics={lyrics}*/}
+      {/*      selectedIdx={selectedIdx}*/}
+      {/*      onSelectIdx={setSelectedIdx}*/}
+      {/*      editMode={editMode}*/}
+      {/*      onEditModeChange={setEditMode}*/}
+      {/*      onPresent={onPresent}*/}
+      {/*      canEdit={canEdit}*/}
+      {/*      onVerify={handleVerify}*/}
+      {/*      onDelete={setDeleteId}*/}
+      {/*    />*/}
+      {/*  )}*/}
 
-            {/* Edit controls (right) */}
-            {canEdit && selected && (
-              <div className="flex gap-2 flex-wrap items-center">
-                {selected.slide_drive_url && (
-                  <button
-                    onClick={() => setEditMode(v => !v)}
-                    className="px-2 py-1 rounded text-xs bg-blue-700 hover:bg-blue-600 text-white transition-colors"
-                  >
-                    {editMode ? vi.lyricPanel.exitEditBtn : vi.lyricPanel.editBtn}
-                  </button>
-                )}
-                {editMode && editUrl && (
-                  <a href={editUrl} target="_blank" rel="noreferrer"
-                    className="px-2 py-1 rounded text-xs bg-gray-600 hover:bg-gray-500 text-white transition-colors">
-                    {vi.lyricPanel.openTabBtn}
-                  </a>
-                )}
-                {!selected.verified_at && (
-                  <button onClick={() => handleVerify(selected)} className="px-2 py-1 rounded text-xs bg-green-700 hover:bg-green-600 text-white transition-colors">
-                    {vi.lyricPanel.verifyBtn}
-                  </button>
-                )}
-                <button onClick={() => setDeleteId(selected.id)} className="px-2 py-1 rounded text-xs bg-red-700 hover:bg-red-600 text-white transition-colors">
-                  {vi.lyricPanel.deleteBtn}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Preview */}
-        <div className="flex-grow bg-gray-900 rounded border border-gray-700">
-          {src ? (
-            <iframe src={src} className="w-full h-full rounded" />
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              {hasSong ? vi.lyricPanel.selectHint : vi.lyricPanel.noSong}
-            </div>
-          )}
-        </div>
-      </div>
+      {/*  /!* Preview *!/*/}
+      {/*  {!hideSlide && (*/}
+      {/*    <div className="flex-grow bg-gray-900 rounded border border-gray-700">*/}
+      {/*      {src ? (*/}
+      {/*        <iframe src={src} className="w-full h-full rounded" />*/}
+      {/*      ) : (*/}
+      {/*        <div className="flex items-center justify-center h-full text-gray-500">*/}
+      {/*          {hasSong ? vi.lyricPanel.selectHint : vi.lyricPanel.noSong}*/}
+      {/*        </div>*/}
+      {/*      )}*/}
+      {/*    </div>*/}
+      {/*  )}*/}
+      {/*</div>*/}
 
       {fullscreen && src && (
         <FullscreenOverlay url={src} title={vi.lyricPanel.fullscreenTitle} onClose={() => setFullscreen(false)} />
@@ -200,9 +141,9 @@ export default function LyricPanel({
           }}
           isSelected={htmlPresenting}
           onSelect={() => setHtmlPresenting(true)}
-          onPresentHtml={onPresentHtml ? (html) => {
+          onPresentConfig={onPresentConfig ? (lyricId, style) => {
             setHtmlPresenting(true);
-            onPresentHtml(html);
+            onPresentConfig(lyricId, style);
           } : undefined}
           style={htmlStyle}
           onStyleChange={setHtmlStyle}

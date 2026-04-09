@@ -7,8 +7,6 @@ import Footer from "../../../_components/Footer";
 import SheetPanel, { type Sheet } from "../../../_components/SheetPanel";
 import LyricPanel, { type Lyric } from "../../../_components/LyricPanel";
 import SongBanner from "./_components/SongBanner";
-import LyricHtmlPanel from "../../live/[sessionId]/compact/_components/LyricHtmlPanel";
-import { DEFAULT_STYLE, type LyricHtmlStyle } from "../../live/[sessionId]/compact/_components/LyricHtmlStyleBar";
 import vi from "../../../../lib/vi";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -22,7 +20,6 @@ export default function EditSongPage() {
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [lyrics, setLyrics] = useState<Lyric[]>([]);
   const [loading, setLoading] = useState(true);
-  const [htmlStyle, setHtmlStyle] = useState<LyricHtmlStyle>(DEFAULT_STYLE);
 
   useEffect(() => {
     fetch(`${API}/api/songs/${id}`)
@@ -70,27 +67,6 @@ export default function EditSongPage() {
 
         <div className="mb-4">
           <LyricPanel songId={id} songTitle={title} songAuthor={author} lyrics={lyrics} onLyricsChange={setLyrics} hasSong canEdit />
-        </div>
-
-        <div className="mb-6">
-          {(() => {
-            const lyric = lyrics.find(l => l.lyrics);
-            return (
-              <LyricHtmlPanel
-                song={{ id, title, author }}
-                lyricId={lyric?.id}
-                lyricsText={lyric?.lyrics ?? ""}
-                onLyricsTextChange={(text) =>
-                  setLyrics(prev => prev.map(l => l.id === lyric?.id ? { ...l, lyrics: text } : l))
-                }
-                isSelected={false}
-                onSelect={() => {}}
-                style={htmlStyle}
-                onStyleChange={setHtmlStyle}
-                previewHeight="30vh"
-              />
-            );
-          })()}
         </div>
 
         <button

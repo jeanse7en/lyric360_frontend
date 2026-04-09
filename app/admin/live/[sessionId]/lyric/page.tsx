@@ -7,6 +7,7 @@ import LiveList from "../../_components/LiveList";
 import LyricPanel from "../../../../_components/LyricPanel";
 import NoteDialog from "../../_components/NoteDialog";
 import HopAmVietPanel from "./_components/HopAmVietPanel";
+import { styleToParams, type LyricHtmlStyle } from "../../../../_components/LyricHtmlPanel";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -60,7 +61,7 @@ export default function LiveLyricDashboard() {
   const handleViewSong = (songId: string) => setCurrentSongId(songId);
 
   const handlePresent = async (url: string) => {
-    await supabase.from("live_sessions").update({ presenting_lyric_url: url, presenting_lyric_html: null }).eq("id", sessionId);
+    await supabase.from("live_sessions").update({ presenting_lyric_url: url }).eq("id", sessionId);
     await supabase.channel(`lyric_present_${sessionId}`).send({
       type: "broadcast",
       event: "present",
@@ -68,12 +69,13 @@ export default function LiveLyricDashboard() {
     });
   };
 
-  const handlePresentHtml = async (html: string) => {
-    await supabase.from("live_sessions").update({ presenting_lyric_html: html, presenting_lyric_url: null }).eq("id", sessionId);
+  const handlePresentConfig = async (lyricId: string, style: LyricHtmlStyle) => {
+    const url = `/live/lyric?lyric_id=${lyricId}&${styleToParams(style)}`;
+    await supabase.from("live_sessions").update({ presenting_lyric_url: url }).eq("id", sessionId);
     await supabase.channel(`lyric_present_${sessionId}`).send({
       type: "broadcast",
       event: "present",
-      payload: { html },
+      payload: { url },
     });
   };
 
@@ -132,7 +134,7 @@ export default function LiveLyricDashboard() {
             key={`lyric-${currentSongId ?? "none"}`}
             lyrics={lyrics}
             onPresent={handlePresent}
-            onPresentHtml={handlePresentHtml}
+            onPresentConfig={handlePresentConfig}
             hasSong={!!currentSongId}
           />
           <HopAmVietPanel

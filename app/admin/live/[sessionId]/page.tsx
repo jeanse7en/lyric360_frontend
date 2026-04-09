@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import LiveList from "../_components/LiveList";
+import { styleToParams, type LyricHtmlStyle } from "../../../_components/LyricHtmlPanel";
 import SheetPanel from "../../../_components/SheetPanel";
 import LyricPanel from "../../../_components/LyricPanel";
 import NoteDialog from "../_components/NoteDialog";
@@ -61,7 +62,7 @@ export default function LiveDashboard() {
   };
 
   const handlePresent = async (url: string) => {
-    await supabase.from("live_sessions").update({ presenting_lyric_url: url, presenting_lyric_html: null }).eq("id", sessionId);
+    await supabase.from("live_sessions").update({ presenting_lyric_url: url }).eq("id", sessionId);
     await supabase.channel(`lyric_present_${sessionId}`).send({
       type: "broadcast",
       event: "present",
@@ -69,12 +70,13 @@ export default function LiveDashboard() {
     });
   };
 
-  const handlePresentHtml = async (html: string) => {
-    await supabase.from("live_sessions").update({ presenting_lyric_html: html, presenting_lyric_url: null }).eq("id", sessionId);
+  const handlePresentConfig = async (lyricId: string, style: LyricHtmlStyle) => {
+    const url = `/live/lyric?lyric_id=${lyricId}&${styleToParams(style)}`;
+    await supabase.from("live_sessions").update({ presenting_lyric_url: url }).eq("id", sessionId);
     await supabase.channel(`lyric_present_${sessionId}`).send({
       type: "broadcast",
       event: "present",
-      payload: { html },
+      payload: { url },
     });
   };
 
@@ -141,8 +143,9 @@ export default function LiveDashboard() {
             key={`lyric-${currentSongId ?? "none"}`}
             lyrics={lyrics}
             onPresent={handlePresent}
-            onPresentHtml={handlePresentHtml}
+            onPresentConfig={handlePresentConfig}
             hasSong={!!currentSongId}
+            hideSlide
           />
         </div>
       </div>
