@@ -18,7 +18,7 @@ export default function LyricDisplay({ text, title, author, style: initialStyle 
 
   const containerRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
-  const hideTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const preFitFontSizeRef = useRef(initialStyle.fontSize);
 
   const stanzas = text.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
