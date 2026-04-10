@@ -21,7 +21,6 @@ export default function MobileRegistration() {
   const [bookerName, setBookerName] = useState("");
   const [singerName, setSingerName] = useState("");
   const [phone, setPhone] = useState("");
-  const [tablePos, setTablePos] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedSong, setSelectedSong] = useState<any>(null);
   const [songInputValue, setSongInputValue] = useState("");
@@ -110,7 +109,6 @@ export default function MobileRegistration() {
           free_text_song_name: !selectedSong && songInputValue.trim() ? songInputValue.trim() : undefined,
           singer_name: singerName,
           booker_phone: phone,
-          table_position: tablePos,
           tone: tone || undefined,
           drinks: selectedDrinks,
           user_id: userId || undefined,
@@ -183,11 +181,9 @@ export default function MobileRegistration() {
               bookerName={bookerName}
               singerName={singerName}
               phone={phone}
-              tablePos={tablePos}
               onBookerNameChange={setBookerName}
               onSingerNameChange={setSingerName}
               onPhoneChange={setPhone}
-              onTablePosChange={setTablePos}
               onUserIdChange={setUserId}
             />
             <SessionSelector sessions={sessions} selectedId={selectedSessionId} onChange={setSelectedSessionId} />

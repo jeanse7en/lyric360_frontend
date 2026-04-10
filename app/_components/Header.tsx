@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 const NAV = [
   { label: "Live", href: "/admin/live" },
   { label: "Bài hát", href: "/admin/songs" },
+  { label: "Cài đặt", href: "/admin/settings" },
 ];
 
 function ThemeToggle() {
