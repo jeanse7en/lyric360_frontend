@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import LyricHtmlStyleBar, { DEFAULT_STYLE, type LyricHtmlStyle } from "./LyricHtmlStyleBar";
 import AddLyricModal from "./lyric-panel/AddLyricModal";
-import { type Lyric } from "./lyric-panel/lyricService";
+import DeleteConfirmModal from "./DeleteConfirmModal";
+import { type Lyric, verifyLyric, deleteLyric } from "./lyric-panel/lyricService";
 
 export { DEFAULT_STYLE, type LyricHtmlStyle };
 
@@ -109,6 +110,8 @@ export default function LyricHtmlPanel({
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Resolve active lyric from multi or single mode
   const multiMode = !!lyrics;
@@ -156,6 +159,26 @@ export default function LyricHtmlPanel({
     }
   };
 
+  const handleVerify = async () => {
+    if (!song?.id || !activeLyricId || !multiMode || !onLyricsChange || !lyrics) return;
+    setVerifying(true);
+    try {
+      await verifyLyric(song.id, activeLyricId);
+      onLyricsChange(lyrics.map(l => l.id === activeLyricId ? { ...l, verified_at: new Date().toISOString() } : l));
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!song?.id || !deleteId || !multiMode || !onLyricsChange || !lyrics) return;
+    await deleteLyric(song.id, deleteId);
+    const next = lyrics.filter(l => l.id !== deleteId);
+    onLyricsChange(next);
+    setSelectedIdx(i => Math.min(i, Math.max(0, next.length - 1)));
+    setDeleteId(null);
+  };
+
   const handleLyricSaved = (lyric: Lyric) => {
     if (!multiMode || !onLyricsChange || !lyrics) return;
     const existing = lyrics.findIndex(l => l.id === lyric.id);
@@ -174,78 +197,108 @@ export default function LyricHtmlPanel({
       <div className={`rounded-xl border-2 mb-3 transition-colors ${isSelected ? "border-green-500" : "border-gray-700"}`}>
         <div className="bg-gray-800 rounded-xl p-3 flex flex-col gap-2">
 
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-gray-200">Lời HTML (Tự tạo)</span>
-              {/* Tabs — only in multi mode */}
-              {multiMode && lyrics!.length > 0 && lyrics!.map((lyric, i) => (
-                <button
-                  key={lyric.id}
-                  onClick={() => { setSelectedIdx(i); setEditing(false); }}
-                  className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                    selectedIdx === i ? "bg-pink-500 text-white" : "bg-gray-700 hover:bg-gray-600 text-white"
-                  }`}
-                >
-                  {i + 1}
-                  {lyric.source_lyric === "AI" && <span className="ml-1 text-purple-300">·AI</span>}
-                  {lyric.verified_at && <span className="ml-1 text-green-400">✓</span>}
-                </button>
-              ))}
-              {/* Add button */}
+          {/* Row 1: title | fullscreen + add */}
+          <div className="flex justify-between items-center">
+            <span className="font-bold text-pink-400 text-sm">Lời HTML</span>
+            <div className="flex gap-2">
               {multiMode && canEdit && song?.id && (
+                  <button
+                      onClick={() => setShowAdd(true)}
+                      className="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-xs text-white transition-colors"
+                  >
+                    +
+                  </button>
+              )}
+              {activeLyricId && (
                 <button
-                  onClick={() => setShowAdd(true)}
-                  className="px-2 py-0.5 rounded text-xs font-medium bg-blue-700 hover:bg-blue-600 text-white transition-colors"
+                  onClick={handleFullscreen}
+                  className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs text-white transition-colors"
                 >
-                  + Thêm
+                  ⛶
                 </button>
               )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {onPresentConfig && hasLyrics && activeLyricId && (
-                <button
-                  onClick={handlePresentToTV}
-                  className={`text-xs px-3 py-1 rounded font-medium transition-colors flex items-center gap-1 ${
-                    isSelected ? "bg-green-700 hover:bg-green-600 text-white" : "bg-gray-700 hover:bg-gray-600 text-white"
-                  }`}
-                  title="Chiếu lên màn hình TV"
-                >
-                  📺{isSelected && <span className="text-green-300">✓</span>}
-                </button>
-              )}
-
-              {!onPresentConfig && (
-                isSelected ? (
-                  <span className="text-xs font-semibold text-green-400 flex items-center gap-1">✓ Đang chọn</span>
-                ) : hasLyrics ? (
-                  <button onClick={onSelect}
-                    className="text-xs bg-indigo-700 hover:bg-indigo-600 text-white px-3 py-1 rounded font-medium transition-colors">
-                    Chọn lời này
-                  </button>
-                ) : null
-              )}
-
-              {canEdit && (!editing ? (
-                <button onClick={() => { setDraft(activeLyricsText); setEditing(true); }}
-                  className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded transition-colors">
-                  ✏️ Sửa
-                </button>
-              ) : (
-                <>
-                  <button onClick={handleSave} disabled={saving || !activeLyricId}
-                    className="text-xs bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white px-2 py-1 rounded transition-colors">
-                    {saving ? "Đang lưu…" : "💾 Lưu"}
-                  </button>
-                  <button onClick={() => { setDraft(activeLyricsText); setEditing(false); }}
-                    className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded transition-colors">
-                    Huỷ
-                  </button>
-                </>
-              ))}
             </div>
           </div>
+
+          {/* Row 2: lyric tabs (left) | present + verify + edit + delete (right) */}
+          {(multiMode && (lyrics!.length > 0 || canEdit)) && (
+            <div className="flex flex-wrap gap-2 items-center justify-between">
+              {/* Tabs */}
+              <div className="flex flex-wrap gap-2 items-center">
+                {lyrics!.map((lyric, i) => (
+                  <button
+                    key={lyric.id}
+                    onClick={() => { setSelectedIdx(i); setEditing(false); }}
+                    className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                      selectedIdx === i ? "bg-pink-500 text-white" : "bg-gray-700 hover:bg-gray-600 text-white"
+                    }`}
+                  >
+                    {i + 1}
+                    {lyric.source_lyric === "AI" && <span className="ml-1 text-purple-300">·AI</span>}
+                    {lyric.verified_at && <span className="ml-1 text-green-400">✓</span>}
+                  </button>
+                ))}
+              </div>
+
+              {/* Actions */}
+              {activeLyricId && (
+                <div className="flex flex-wrap gap-2 items-center">
+                  {/* Present to TV */}
+                  {onPresentConfig && hasLyrics && (
+                    <button
+                      onClick={handlePresentToTV}
+                      className={`text-xs px-2 py-1 rounded font-medium transition-colors flex items-center gap-1 ${
+                        isSelected ? "bg-green-700 hover:bg-green-600 text-white" : "bg-gray-700 hover:bg-gray-600 text-white"
+                      }`}
+                      title="Chiếu lên màn hình TV"
+                    >
+                      📺{isSelected && <span className="text-green-300">✓</span>}
+                    </button>
+                  )}
+
+                  {/* Verify */}
+                  {canEdit && lyrics![selectedIdx] && !lyrics![selectedIdx].verified_at && (
+                    <button
+                      onClick={handleVerify}
+                      disabled={verifying}
+                      className="text-xs px-2 py-1 rounded bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white transition-colors"
+                    >
+                      {verifying ? "..." : "✓ Xác nhận"}
+                    </button>
+                  )}
+
+                  {/* Edit / Save / Cancel */}
+                  {canEdit && (!editing ? (
+                    <button onClick={() => { setDraft(activeLyricsText); setEditing(true); }}
+                      className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded transition-colors">
+                      ✏️
+                    </button>
+                  ) : (
+                    <>
+                      <button onClick={handleSave} disabled={saving}
+                        className="text-xs bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white px-2 py-1 rounded transition-colors">
+                        {saving ? "Đang lưu…" : "💾 Lưu"}
+                      </button>
+                      <button onClick={() => { setDraft(activeLyricsText); setEditing(false); }}
+                        className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded transition-colors">
+                        Huỷ
+                      </button>
+                    </>
+                  ))}
+
+                  {/* Delete */}
+                  {canEdit && (
+                    <button
+                      onClick={() => setDeleteId(activeLyricId)}
+                      className="text-xs px-2 py-1 rounded bg-red-700 hover:bg-red-600 text-white transition-colors"
+                    >
+                      🗑
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Body */}
           {!hasLyrics ? (
@@ -263,24 +316,12 @@ export default function LyricHtmlPanel({
               />
             </>
           ) : (
-            <div className="flex gap-2 items-stretch">
-              <div className="flex-1 relative group">
-                <LyricPreview lyricsText={displayText} style={style} />
-                {/* Floating style bar — visible on hover */}
-                <div className="absolute bottom-0 inset-x-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
-                  <LyricHtmlStyleBar style={style} onChange={onStyleChange} />
-                </div>
+            <div className="relative group">
+              <LyricPreview lyricsText={displayText} style={style} />
+              {/* Floating style bar — visible on hover */}
+              <div className="absolute bottom-0 inset-x-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+                <LyricHtmlStyleBar style={style} onChange={onStyleChange} />
               </div>
-              {activeLyricId && (
-                <button
-                  onClick={handleFullscreen}
-                  className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 rounded transition-colors shrink-0"
-                  style={{ writingMode: "vertical-rl" }}
-                  title="Xem trước toàn màn hình"
-                >
-                  ⛶ Toàn màn hình
-                </button>
-              )}
             </div>
           )}
         </div>
@@ -293,6 +334,17 @@ export default function LyricHtmlPanel({
           songAuthor={song.author ?? ""}
           onSaved={handleLyricSaved}
           onClose={() => setShowAdd(false)}
+        />
+      )}
+
+      {deleteId && (
+        <DeleteConfirmModal
+          title="Xoá lời bài hát"
+          message="Bạn có chắc muốn xoá lời này không?"
+          confirmLabel="Xoá"
+          cancelLabel="Huỷ"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteId(null)}
         />
       )}
     </>

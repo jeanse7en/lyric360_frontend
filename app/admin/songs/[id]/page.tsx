@@ -68,13 +68,6 @@ export default function EditSongPage() {
         <div className="mb-4">
           <LyricPanel songId={id} songTitle={title} songAuthor={author} lyrics={lyrics} onLyricsChange={setLyrics} hasSong canEdit />
         </div>
-
-        <button
-          onClick={() => router.push("/admin/songs")}
-          className="w-full py-2 rounded-lg text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white transition-colors"
-        >
-          {vi.editSongPage.doneBtn}
-        </button>
       </div>
       <Footer />
     </div>
