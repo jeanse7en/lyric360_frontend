@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 type VerifyStatus = "UNVERIFIED_ALL" | "UNVERIFIED_LYRIC" | "UNVERIFIED_SHEET" | "VERIFIED" | "";
 type LyricCharsPreset = "" | "0-499" | "500-999" | "1000-1999" | ">=2000";
-type CountPreset = "" | "0-1" | "2-4" | ">=5";
+type CountPreset = "" | "0" | "1" | "2-4" | ">=5";
 
 const VERIFY_FILTERS: { label: string; value: VerifyStatus }[] = [
   { label: "Tất cả", value: "" },
@@ -24,7 +24,8 @@ const LYRIC_CHARS_OPTIONS: { label: string; value: LyricCharsPreset }[] = [
 
 const COUNT_OPTIONS: { label: string; value: CountPreset }[] = [
   { label: "Tất cả", value: "" },
-  { label: "0 – 1", value: "0-1" },
+  {label: "0", value: "0"},
+  {label: "1", value: "1"},
   { label: "2 – 4", value: "2-4" },
   { label: ">= 5", value: ">=5" },
 ];
@@ -34,6 +35,7 @@ export type SongFilters = {
   lyricChars: LyricCharsPreset;
   lyricCount: CountPreset;
   sheetCount: CountPreset;
+  searchInLyric: boolean;
 };
 
 export const DEFAULT_FILTERS: SongFilters = {
@@ -41,6 +43,7 @@ export const DEFAULT_FILTERS: SongFilters = {
   lyricChars: "",
   lyricCount: "",
   sheetCount: "",
+  searchInLyric: false,
 };
 
 function countActiveFilters(f: SongFilters): number {
@@ -48,7 +51,8 @@ function countActiveFilters(f: SongFilters): number {
     (f.verifyStatus !== "" ? 1 : 0) +
     (f.lyricChars !== "" ? 1 : 0) +
     (f.lyricCount !== "" ? 1 : 0) +
-    (f.sheetCount !== "" ? 1 : 0)
+    (f.sheetCount !== "" ? 1 : 0) +
+    (f.searchInLyric ? 1 : 0)
   );
 }
 
@@ -183,6 +187,19 @@ export default function SongFilter({ query, filters, onQueryChange, onFiltersCha
                 value={filters.sheetCount}
                 onChange={v => update({ sheetCount: v })}
               />
+
+              <div className="space-y-1.5">
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Tìm kiếm trong</span>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.searchInLyric}
+                    onChange={e => update({ searchInLyric: e.target.checked })}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-xs text-gray-700 dark:text-gray-300">Tìm trong nội dung lời bài hát</span>
+                </label>
+              </div>
             </div>
           )}
         </div>
@@ -213,6 +230,12 @@ export default function SongFilter({ query, filters, onQueryChange, onFiltersCha
             <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs">
               Sheet: {COUNT_OPTIONS.find(o => o.value === filters.sheetCount)?.label}
               <button onClick={() => update({ sheetCount: "" })} className="hover:text-blue-900 dark:hover:text-blue-100">×</button>
+            </span>
+          )}
+          {filters.searchInLyric && (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs">
+              Tìm trong lời
+              <button onClick={() => update({ searchInLyric: false })} className="hover:text-blue-900 dark:hover:text-blue-100">×</button>
             </span>
           )}
         </div>

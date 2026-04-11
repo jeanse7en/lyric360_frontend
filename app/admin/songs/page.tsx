@@ -42,7 +42,8 @@ function countToParams(
   minKey: string,
   maxKey: string,
 ): Record<string, string> {
-  if (preset === "0-1") return { [maxKey]: "1" };
+  if (preset === "0") return { [minKey]: "0", [maxKey]: "0" };
+  if (preset === "1") return { [minKey]: "1", [maxKey]: "1" };
   if (preset === "2-4") return { [minKey]: "2", [maxKey]: "4" };
   if (preset === ">=5") return { [minKey]: "5" };
   return {};
@@ -55,6 +56,7 @@ function buildUrl(query: string, filters: SongFilters) {
   if (filters.lyricChars) params.set("lyricChars", filters.lyricChars);
   if (filters.lyricCount) params.set("lyricCount", filters.lyricCount);
   if (filters.sheetCount) params.set("sheetCount", filters.sheetCount);
+  if (filters.searchInLyric) params.set("searchInLyric", "1");
   const qs = params.toString();
   return `/admin/songs${qs ? `?${qs}` : ""}`;
 }
@@ -65,6 +67,7 @@ function filtersFromParams(searchParams: ReturnType<typeof useSearchParams>): So
     lyricChars: (searchParams.get("lyricChars") as LyricCharsPreset) ?? "",
     lyricCount: (searchParams.get("lyricCount") as CountPreset) ?? "",
     sheetCount: (searchParams.get("sheetCount") as CountPreset) ?? "",
+    searchInLyric: searchParams.get("searchInLyric") === "1",
   };
 }
 
@@ -91,6 +94,7 @@ function SongsPageInner() {
       Object.entries(lyricCharsToParams(f.lyricChars)).forEach(([k, v]) => params.set(k, v));
       Object.entries(countToParams(f.lyricCount, "min_lyric_count", "max_lyric_count")).forEach(([k, v]) => params.set(k, v));
       Object.entries(countToParams(f.sheetCount, "min_sheet_count", "max_sheet_count")).forEach(([k, v]) => params.set(k, v));
+      if (f.searchInLyric) params.set("search_lyric", "1");
       const res = await fetch(`${API}/api/songs/manage?${params}`);
       if (!res.ok) return;
       const data: Song[] = await res.json();
