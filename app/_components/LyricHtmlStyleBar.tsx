@@ -19,23 +19,26 @@ export type LyricHtmlStyle = {
   fontFamily: string;
   fontSize: number; // base font size in px (auto-fit scales from this)
   singlePage: boolean; // all stanzas on one slide, no pagination
+  splitColumns: boolean; // split lines evenly into 2 columns
 };
 
 export const DEFAULT_STYLE: LyricHtmlStyle = {
   bgColor: "#000000",
   color1: "#FFD700",
   color2: "#FFFFFF",
-  fontFamily: "Arial",
+  fontFamily: "Times New Roman",
   fontSize: 40,
   singlePage: true,
+  splitColumns: true,
 };
 
 type Props = {
   style: LyricHtmlStyle;
   onChange: (s: LyricHtmlStyle) => void;
+  onClose?: () => void;
 };
 
-export default function LyricHtmlStyleBar({ style, onChange }: Props) {
+export default function LyricHtmlStyleBar({ style, onChange, onClose }: Props) {
   const set = (patch: Partial<LyricHtmlStyle>) => onChange({ ...style, ...patch });
 
   const activeTheme = THEMES.findIndex(
@@ -91,6 +94,30 @@ export default function LyricHtmlStyleBar({ style, onChange }: Props) {
       >
         1 trang
       </button>
+
+      <button
+        onClick={() => set({ splitColumns: !style.splitColumns })}
+        className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+          style.splitColumns
+            ? "bg-indigo-600 text-white"
+            : "bg-gray-700 text-gray-400 hover:bg-gray-600"
+        }`}
+      >
+        {style.splitColumns ? "Chia đều" : "Chia khổ"}
+      </button>
+
+      {onClose && (
+        <>
+          <div className="w-px h-4 bg-gray-700" />
+          <button
+            onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded bg-gray-700 hover:bg-red-700 text-gray-400 hover:text-white text-sm transition-colors"
+            title="Ẩn thanh điều chỉnh"
+          >
+            ✕
+          </button>
+        </>
+      )}
     </div>
   );
 }

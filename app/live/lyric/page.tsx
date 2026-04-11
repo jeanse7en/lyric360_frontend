@@ -53,6 +53,7 @@ export default function LiveLyricPage() {
   const [externalUrl, setExternalUrl] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
+
   // Load from URL params (direct open / fullscreen preview) or from DB
   useEffect(() => {
     const init = async () => {

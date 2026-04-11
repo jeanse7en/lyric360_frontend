@@ -48,9 +48,6 @@ export default function EditSongPage() {
       <Header />
       <div className="flex-1 max-w-3xl w-full mx-auto py-6 px-4">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => router.push("/admin/songs")} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm">
-            {vi.editSongPage.backBtn}
-          </button>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{vi.editSongPage.title}</h1>
         </div>
 

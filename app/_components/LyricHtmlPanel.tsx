@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import LyricHtmlStyleBar, { DEFAULT_STYLE, type LyricHtmlStyle } from "./LyricHtmlStyleBar";
 import AddLyricModal from "./lyric-panel/AddLyricModal";
 import DeleteConfirmModal from "./DeleteConfirmModal";
@@ -20,6 +20,7 @@ export function styleToParams(style: LyricHtmlStyle): string {
     font: style.fontFamily,
     size: String(style.fontSize),
     single: style.singlePage ? "1" : "0",
+    split: style.splitColumns ? "1" : "0",
   });
   return p.toString();
 }
@@ -31,30 +32,60 @@ export function paramsToStyle(params: URLSearchParams): LyricHtmlStyle {
     color2:     params.get("c2")    ?? DEFAULT_STYLE.color2,
     fontFamily: params.get("font")  ?? DEFAULT_STYLE.fontFamily,
     fontSize:   Number(params.get("size"))  || DEFAULT_STYLE.fontSize,
-    singlePage: params.get("single") === "1",
+    singlePage:   params.get("single") === "1",
+    splitColumns: params.get("split")  === "1",
   };
 }
 
 // ── Simple React preview (no iframe, no HTML generation) ─────────────────────
 
 export function LyricPreview({ lyricsText, style }: { lyricsText: string; style: LyricHtmlStyle }) {
+  const containerStyle = {
+    aspectRatio: "16/9",
+    background: style.bgColor,
+    fontFamily: `${style.fontFamily}, Arial, sans-serif`,
+    fontSize: `${style.fontSize}px`,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "2% 3%",
+    overflow: "hidden",
+  };
+
+  if (style.splitColumns) {
+    const allLines = lyricsText.split("\n");
+    const mid = Math.ceil(allLines.length / 2);
+    let paraIdx = 0;
+    const lineColors = allLines.map(line => {
+      const color = paraIdx % 2 === 0 ? style.color1 : style.color2;
+      if (line.trim() === "") paraIdx++;
+      return color;
+    });
+    const renderLines = (lines: string[], offset: number) =>
+      lines.map((line, i) =>
+        line.trim() === "" ? (
+          <div key={i} style={{ height: "0.4em" }} />
+        ) : (
+          <p key={i} style={{ color: lineColors[offset + i], lineHeight: 1.5, fontWeight: 500, margin: 0 }}>
+            {line}
+          </p>
+        )
+      );
+    return (
+      <div className="w-full rounded overflow-hidden" style={containerStyle}>
+        <div style={{ display: "flex", gap: "2em", width: "100%", textAlign: "center" }}>
+          <div style={{ flex: 1 }}>{renderLines(allLines.slice(0, mid), 0)}</div>
+          <div style={{ flex: 1 }}>{renderLines(allLines.slice(mid), mid)}</div>
+        </div>
+      </div>
+    );
+  }
+
   const stanzas = lyricsText.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
   return (
     <div
       className="w-full rounded overflow-hidden"
-      style={{
-        aspectRatio: "16/9",
-        background: style.bgColor,
-        fontFamily: `${style.fontFamily}, Arial, sans-serif`,
-        fontSize: `${style.fontSize}px`,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "2% 3%",
-        gap: "0.4em",
-        overflow: "hidden",
-      }}
+      style={{ ...containerStyle, flexDirection: "column", gap: "0.4em" }}
     >
       <div style={{ columns: 2, columnGap: "3em", width: "100%", textAlign: "center" }}>
         {stanzas.map((s, i) => (
@@ -112,6 +143,7 @@ export default function LyricHtmlPanel({
   const [showAdd, setShowAdd] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [styleBarVisible, setStyleBarVisible] = useState(true);
 
   // Resolve active lyric from multi or single mode
   const multiMode = !!lyrics;
@@ -131,12 +163,6 @@ export default function LyricHtmlPanel({
     if (!hasLyrics || !onPresentConfig || !activeLyricId) return;
     onSelect();
     onPresentConfig(activeLyricId, style);
-  };
-
-  const handleFullscreen = () => {
-    if (!activeLyricId) return;
-    const url = `/live/lyric?lyric_id=${activeLyricId}&${styleToParams(style)}`;
-    window.open(url, "_blank");
   };
 
   const handleSave = async () => {
@@ -210,12 +236,14 @@ export default function LyricHtmlPanel({
                   </button>
               )}
               {activeLyricId && (
-                <button
-                  onClick={handleFullscreen}
+                <a
+                  href={`/live/lyric?lyric_id=${activeLyricId}&${styleToParams(style)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs text-white transition-colors"
                 >
                   ⛶
-                </button>
+                </a>
               )}
             </div>
           </div>
@@ -263,7 +291,7 @@ export default function LyricHtmlPanel({
                       disabled={verifying}
                       className="text-xs px-2 py-1 rounded bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white transition-colors"
                     >
-                      {verifying ? "..." : "✓ Xác nhận"}
+                      {verifying ? "..." : "✓"}
                     </button>
                   )}
 
@@ -318,10 +346,29 @@ export default function LyricHtmlPanel({
           ) : (
             <div className="relative group">
               <LyricPreview lyricsText={displayText} style={style} />
-              {/* Floating style bar — visible on hover */}
-              <div className="absolute bottom-0 inset-x-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
-                <LyricHtmlStyleBar style={style} onChange={onStyleChange} />
+              {/* Floating style bar — visible on hover or when manually shown */}
+              <div
+                className={`absolute bottom-0 inset-x-0 p-2 transition-opacity duration-200 ${
+                  styleBarVisible
+                    ? "opacity-100 pointer-events-auto"
+                    : "opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
+                }`}
+              >
+                <LyricHtmlStyleBar
+                  style={style}
+                  onChange={onStyleChange}
+                  onClose={styleBarVisible ? () => setStyleBarVisible(false) : undefined}
+                />
               </div>
+              {!styleBarVisible && (
+                <button
+                  onClick={() => setStyleBarVisible(true)}
+                  className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white text-xs"
+                  title="Hiện thanh điều chỉnh"
+                >
+                  ⚙
+                </button>
+              )}
             </div>
           )}
         </div>

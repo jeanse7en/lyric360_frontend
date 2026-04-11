@@ -61,6 +61,7 @@ export default function AddLyricModal({ songId, songTitle, songAuthor, onSaved, 
       });
       onSaved(lyric);
       setSavedLyric(lyric);
+      onClose(); // slide generation disabled — close immediately after save
     } catch {
       setError(vi.lyricPanel.errCannotSave);
     } finally {

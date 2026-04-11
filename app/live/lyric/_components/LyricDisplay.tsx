@@ -15,11 +15,13 @@ export default function LyricDisplay({ text, title, author, style: initialStyle 
   const [pages, setPages] = useState<string[][]>([]);
   const [cur, setCur] = useState(0);
   const [bannerVisible, setBannerVisible] = useState(true);
+  const [bannerPinned, setBannerPinned] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const preFitFontSizeRef = useRef(initialStyle.fontSize);
+  const preSplitFontSizeRef = useRef(initialStyle.fontSize);
 
   const stanzas = text.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
 
@@ -130,10 +132,11 @@ export default function LyricDisplay({ text, title, author, style: initialStyle 
 
   // ── Banner auto-hide ──────────────────────────────────────────────────────
   const showBanner = useCallback(() => {
+    if (bannerPinned) return;
     setBannerVisible(true);
     clearTimeout(hideTimerRef.current);
     hideTimerRef.current = setTimeout(() => setBannerVisible(false), 3000);
-  }, []);
+  }, [bannerPinned]);
 
   useEffect(() => {
     window.addEventListener("mousemove", showBanner);
@@ -168,7 +171,11 @@ export default function LyricDisplay({ text, title, author, style: initialStyle 
         style={{ opacity: bannerVisible ? 1 : 0, transform: bannerVisible ? "translateY(0)" : "translateY(-100%)", cursor: "default" }}
         onClick={e => e.stopPropagation()}
       >
-        <LyricHtmlStyleBar style={style} onChange={setStyle} />
+        <LyricHtmlStyleBar
+          style={style}
+          onChange={setStyle}
+          onClose={() => { setBannerVisible(false); setBannerPinned(false); clearTimeout(hideTimerRef.current); }}
+        />
       </div>
 
       {/* Lyric content */}
@@ -179,27 +186,53 @@ export default function LyricDisplay({ text, title, author, style: initialStyle 
         {total > 1 && (
           <div className="absolute top-12 right-4 text-xs text-gray-600">{cur + 1}/{total}</div>
         )}
-        <div style={{ columns: 2, columnGap: "3em", width: "100%" }}>
-          {page.map((stanza, i) => {
-            // globalIdx = position in original stanzas array
-            const globalIdx = stanzas.indexOf(stanza);
-            return (
-              <p
-                key={i}
-                style={{
-                  color: globalIdx % 2 === 0 ? style.color1 : style.color2,
-                  whiteSpace: "pre-wrap",
-                  lineHeight: 1.5,
-                  fontWeight: 500,
-                  marginBottom: "0.4em",
-                  breakInside: "avoid",
-                }}
-              >
-                {stanza}
-              </p>
+        {style.splitColumns ? (() => {
+          const allLines = page.join("\n\n").split("\n");
+          const mid = Math.ceil(allLines.length / 2);
+          let paraIdx = 0;
+          const lineColors = allLines.map(line => {
+            const color = paraIdx % 2 === 0 ? style.color1 : style.color2;
+            if (line.trim() === "") paraIdx++;
+            return color;
+          });
+          const renderLines = (lines: string[], offset: number) =>
+            lines.map((line, i) =>
+              line.trim() === "" ? (
+                <div key={i} style={{ height: "0.4em" }} />
+              ) : (
+                <p key={i} style={{ color: lineColors[offset + i], lineHeight: 1.5, fontWeight: 500, margin: 0 }}>
+                  {line}
+                </p>
+              )
             );
-          })}
-        </div>
+          return (
+            <div style={{ display: "flex", gap: "3em", width: "100%" }}>
+              <div style={{ flex: 1, textAlign: "center" }}>{renderLines(allLines.slice(0, mid), 0)}</div>
+              <div style={{ flex: 1, textAlign: "center" }}>{renderLines(allLines.slice(mid), mid)}</div>
+            </div>
+          );
+        })() : (
+          <div style={{ columns: 2, columnGap: "3em", width: "100%" }}>
+            {page.map((stanza, i) => {
+              const globalIdx = stanzas.indexOf(stanza);
+              return (
+                <p
+                  key={i}
+                  style={{
+                    color: globalIdx % 2 === 0 ? style.color1 : style.color2,
+                    whiteSpace: "pre-wrap",
+                    lineHeight: 1.5,
+                    fontWeight: 500,
+                    marginBottom: "0.4em",
+                    breakInside: "avoid",
+                  }}
+                >
+                  {stanza}
+                </p>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Swipe hint (fades out) */}

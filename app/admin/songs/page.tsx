@@ -4,7 +4,13 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import SongListItem from "./_components/SongListItem";
 import vi from "../../../lib/vi";
-import SongFilter, { type VerifyStatus } from "./_components/SongFilter";
+import SongFilter, {
+  type VerifyStatus,
+  type LyricCharsPreset,
+  type CountPreset,
+  type SongFilters,
+  DEFAULT_FILTERS,
+} from "./_components/SongFilter";
 import Header from "../../_components/Header";
 import Footer from "../../_components/Footer";
 import CreateSongModal from "./_components/CreateSongModal";
@@ -16,16 +22,49 @@ type Song = {
   lyric_count: number;
   sheet_count: number;
   unverified_count: number;
+  max_lyric_chars: number;
 };
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
-function buildUrl(query: string, verifyStatus: VerifyStatus) {
+// Map preset string → { min?, max? } for the API
+function lyricCharsToParams(preset: LyricCharsPreset): Record<string, string> {
+  if (preset === "0-500") return { max_lyric_chars: "500" };
+  if (preset === "500-1000") return { min_lyric_chars: "500", max_lyric_chars: "1000" };
+  if (preset === "1000-2000") return { min_lyric_chars: "1000", max_lyric_chars: "2000" };
+  if (preset === ">2000") return { min_lyric_chars: "2001" };
+  return {};
+}
+
+function countToParams(
+  preset: CountPreset,
+  minKey: string,
+  maxKey: string,
+): Record<string, string> {
+  if (preset === "0-1") return { [maxKey]: "1" };
+  if (preset === "1-5") return { [minKey]: "1", [maxKey]: "5" };
+  if (preset === ">5") return { [minKey]: "6" };
+  return {};
+}
+
+function buildUrl(query: string, filters: SongFilters) {
   const params = new URLSearchParams();
   if (query) params.set("q", query);
-  if (verifyStatus) params.set("verifyStatus", verifyStatus);
+  if (filters.verifyStatus) params.set("verifyStatus", filters.verifyStatus);
+  if (filters.lyricChars) params.set("lyricChars", filters.lyricChars);
+  if (filters.lyricCount) params.set("lyricCount", filters.lyricCount);
+  if (filters.sheetCount) params.set("sheetCount", filters.sheetCount);
   const qs = params.toString();
   return `/admin/songs${qs ? `?${qs}` : ""}`;
+}
+
+function filtersFromParams(searchParams: ReturnType<typeof useSearchParams>): SongFilters {
+  return {
+    verifyStatus: (searchParams.get("verifyStatus") as VerifyStatus) ?? "",
+    lyricChars: (searchParams.get("lyricChars") as LyricCharsPreset) ?? "",
+    lyricCount: (searchParams.get("lyricCount") as CountPreset) ?? "",
+    sheetCount: (searchParams.get("sheetCount") as CountPreset) ?? "",
+  };
 }
 
 function SongsPageInner() {
@@ -35,20 +74,21 @@ function SongsPageInner() {
   const [unverifiedCount, setUnverifiedCount] = useState(0);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
-  const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>(
-    (searchParams.get("verifyStatus") as VerifyStatus) ?? ""
-  );
+  const [filters, setFilters] = useState<SongFilters>(() => filtersFromParams(searchParams));
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const fetchSongs = async (search: string, status: VerifyStatus, currentOffset: number, append = false) => {
+  const fetchSongs = async (search: string, f: SongFilters, currentOffset: number, append = false) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ offset: String(currentOffset), limit: "20" });
       if (search) params.set("q", search);
-      if (status) params.set("verify_status", status);
+      if (f.verifyStatus) params.set("verify_status", f.verifyStatus);
+      Object.entries(lyricCharsToParams(f.lyricChars)).forEach(([k, v]) => params.set(k, v));
+      Object.entries(countToParams(f.lyricCount, "min_lyric_count", "max_lyric_count")).forEach(([k, v]) => params.set(k, v));
+      Object.entries(countToParams(f.sheetCount, "min_sheet_count", "max_sheet_count")).forEach(([k, v]) => params.set(k, v));
       const res = await fetch(`${API}/api/songs/manage?${params}`);
       if (!res.ok) return;
       const data: Song[] = await res.json();
@@ -64,22 +104,22 @@ function SongsPageInner() {
 
   useEffect(() => {
     fetchUnverifiedCount();
-    fetchSongs(query, verifyStatus, 0);
+    fetchSongs(query, filters, 0);
   }, []);
 
   useEffect(() => {
     const id = setTimeout(() => {
-      router.replace(buildUrl(query, verifyStatus));
+      router.replace(buildUrl(query, filters));
       setOffset(0);
-      fetchSongs(query, verifyStatus, 0);
+      fetchSongs(query, filters, 0);
     }, 300);
     return () => clearTimeout(id);
-  }, [query, verifyStatus]);
+  }, [query, filters]);
 
   const loadMore = () => {
     const next = offset + 20;
     setOffset(next);
-    fetchSongs(query, verifyStatus, next, true);
+    fetchSongs(query, filters, next, true);
   };
 
   useEffect(() => {
@@ -90,7 +130,7 @@ function SongsPageInner() {
     );
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [hasMore, loading, offset, query, verifyStatus]);
+  }, [hasMore, loading, offset, query, filters]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
@@ -99,28 +139,28 @@ function SongsPageInner() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{vi.songsPage.title}</h1>
           <div className="flex items-center gap-2">
-          {unverifiedCount > 0 && (
+            {unverifiedCount > 0 && (
+              <button
+                onClick={() => { setQuery(""); setFilters({ ...DEFAULT_FILTERS, verifyStatus: "UNVERIFIED_ALL" }); }}
+                className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 hover:bg-amber-100 transition-colors text-sm"
+              >
+                <span className="text-amber-600 font-medium">🔔 {unverifiedCount} bài cần đánh giá</span>
+              </button>
+            )}
             <button
-              onClick={() => { setQuery(""); setVerifyStatus("UNVERIFIED_ALL"); }}
-              className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 hover:bg-amber-100 transition-colors text-sm"
+              onClick={() => setShowCreateModal(true)}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
             >
-              <span className="text-amber-600 font-medium">🔔 {unverifiedCount} bài cần đánh giá</span>
+              + Thêm
             </button>
-          )}
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
-          >
-            + Thêm
-          </button>
           </div>
         </div>
 
         <SongFilter
           query={query}
-          verifyStatus={verifyStatus}
+          filters={filters}
           onQueryChange={setQuery}
-          onVerifyStatusChange={setVerifyStatus}
+          onFiltersChange={setFilters}
         />
 
         {/* List */}
