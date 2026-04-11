@@ -14,6 +14,7 @@ import SongFilter, {
 import Header from "../../_components/Header";
 import Footer from "../../_components/Footer";
 import CreateSongModal from "./_components/CreateSongModal";
+import DeleteConfirmModal from "../../_components/DeleteConfirmModal";
 
 type Song = {
   id: string;
@@ -29,10 +30,10 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 
 // Map preset string → { min?, max? } for the API
 function lyricCharsToParams(preset: LyricCharsPreset): Record<string, string> {
-  if (preset === "0-500") return { max_lyric_chars: "500" };
-  if (preset === "500-1000") return { min_lyric_chars: "500", max_lyric_chars: "1000" };
-  if (preset === "1000-2000") return { min_lyric_chars: "1000", max_lyric_chars: "2000" };
-  if (preset === ">2000") return { min_lyric_chars: "2001" };
+  if (preset === "0-499") return { max_lyric_chars: "499" };
+  if (preset === "500-999") return { min_lyric_chars: "500", max_lyric_chars: "999" };
+  if (preset === "1000-1999") return { min_lyric_chars: "1000", max_lyric_chars: "1999" };
+  if (preset === ">=2000") return { min_lyric_chars: "2000" };
   return {};
 }
 
@@ -42,8 +43,8 @@ function countToParams(
   maxKey: string,
 ): Record<string, string> {
   if (preset === "0-1") return { [maxKey]: "1" };
-  if (preset === "1-5") return { [minKey]: "1", [maxKey]: "5" };
-  if (preset === ">5") return { [minKey]: "6" };
+  if (preset === "2-4") return { [minKey]: "2", [maxKey]: "4" };
+  if (preset === ">=5") return { [minKey]: "5" };
   return {};
 }
 
@@ -78,6 +79,7 @@ function SongsPageInner() {
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const fetchSongs = async (search: string, f: SongFilters, currentOffset: number, append = false) => {
@@ -115,6 +117,13 @@ function SongsPageInner() {
     }, 300);
     return () => clearTimeout(id);
   }, [query, filters]);
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    await fetch(`${API}/api/songs/${deleteId}`, { method: "DELETE" });
+    setSongs(prev => prev.filter(s => s.id !== deleteId));
+    setDeleteId(null);
+  };
 
   const loadMore = () => {
     const next = offset + 20;
@@ -165,7 +174,7 @@ function SongsPageInner() {
 
         {/* List */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-          {songs.map(song => <SongListItem key={song.id} song={song} q={query} />)}
+          {songs.map(song => <SongListItem key={song.id} song={song} q={query} onDelete={setDeleteId} />)}
           {!loading && songs.length === 0 && (
             <p className="text-center text-gray-400 py-8">Không tìm thấy bài hát nào</p>
           )}
@@ -177,6 +186,16 @@ function SongsPageInner() {
       </div>
       <Footer />
       <CreateSongModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
+      {deleteId && (
+        <DeleteConfirmModal
+          title="Xoá bài hát"
+          message="Bạn có chắc muốn xoá bài hát này không? Hành động này không thể hoàn tác."
+          confirmLabel="Xoá"
+          cancelLabel="Huỷ"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteId(null)}
+        />
+      )}
     </div>
   );
 }

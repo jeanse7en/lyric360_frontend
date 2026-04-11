@@ -11,9 +11,9 @@ type Song = {
   unverified_count: number;
 };
 
-type Props = { song: Song; q: string };
+type Props = { song: Song; q: string; onDelete: (id: string) => void };
 
-export default function SongListItem({ song }: Props) {
+export default function SongListItem({ song, onDelete }: Props) {
   const router = useRouter();
 
   return (
@@ -37,6 +37,14 @@ export default function SongListItem({ song }: Props) {
           <span>🎼 {song.sheet_count} sheet</span>
         </div>
       </div>
+
+      <button
+        onClick={e => { e.stopPropagation(); onDelete(song.id); }}
+        className="ml-3 p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
+        title="Xoá bài hát"
+      >
+        🗑
+      </button>
     </div>
   );
 }

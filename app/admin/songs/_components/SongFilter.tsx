@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 
 type VerifyStatus = "UNVERIFIED_ALL" | "UNVERIFIED_LYRIC" | "UNVERIFIED_SHEET" | "VERIFIED" | "";
-type LyricCharsPreset = "" | "0-500" | "500-1000" | "1000-2000" | ">2000";
-type CountPreset = "" | "0-1" | "1-5" | ">5";
+type LyricCharsPreset = "" | "0-499" | "500-999" | "1000-1999" | ">=2000";
+type CountPreset = "" | "0-1" | "2-4" | ">=5";
 
 const VERIFY_FILTERS: { label: string; value: VerifyStatus }[] = [
   { label: "Tất cả", value: "" },
@@ -16,17 +16,17 @@ const VERIFY_FILTERS: { label: string; value: VerifyStatus }[] = [
 
 const LYRIC_CHARS_OPTIONS: { label: string; value: LyricCharsPreset }[] = [
   { label: "Tất cả", value: "" },
-  { label: "0 – 500", value: "0-500" },
-  { label: "500 – 1000", value: "500-1000" },
-  { label: "1000 - 2000", value: "1000-2000" },
-  { label: "> 2000", value: ">2000" }
+  { label: "0 – 500", value: "0-499" },
+  { label: "500 – 999", value: "500-999" },
+  { label: "1000 - 1999", value: "1000-1999" },
+  { label: "> 2000", value: ">=2000" }
 ];
 
 const COUNT_OPTIONS: { label: string; value: CountPreset }[] = [
   { label: "Tất cả", value: "" },
   { label: "0 – 1", value: "0-1" },
-  { label: "1 – 5", value: "1-5" },
-  { label: "> 5", value: ">5" },
+  { label: "2 – 4", value: "2-4" },
+  { label: ">= 5", value: ">=5" },
 ];
 
 export type SongFilters = {
