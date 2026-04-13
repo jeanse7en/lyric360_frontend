@@ -8,6 +8,7 @@ import SongFilter, {
   type VerifyStatus,
   type LyricCharsPreset,
   type CountPreset,
+  type SortPreset,
   type SongFilters,
   DEFAULT_FILTERS,
 } from "./_components/SongFilter";
@@ -57,6 +58,7 @@ function buildUrl(query: string, filters: SongFilters) {
   if (filters.lyricCount) params.set("lyricCount", filters.lyricCount);
   if (filters.sheetCount) params.set("sheetCount", filters.sheetCount);
   if (filters.searchInLyric) params.set("searchInLyric", "1");
+  if (filters.sortBy !== "last_viewed_at") params.set("sortBy", filters.sortBy);
   const qs = params.toString();
   return `/admin/songs${qs ? `?${qs}` : ""}`;
 }
@@ -68,6 +70,7 @@ function filtersFromParams(searchParams: ReturnType<typeof useSearchParams>): So
     lyricCount: (searchParams.get("lyricCount") as CountPreset) ?? "",
     sheetCount: (searchParams.get("sheetCount") as CountPreset) ?? "",
     searchInLyric: searchParams.get("searchInLyric") === "1",
+    sortBy: (searchParams.get("sortBy") as SortPreset) ?? "last_viewed_at",
   };
 }
 
@@ -95,6 +98,7 @@ function SongsPageInner() {
       Object.entries(countToParams(f.lyricCount, "min_lyric_count", "max_lyric_count")).forEach(([k, v]) => params.set(k, v));
       Object.entries(countToParams(f.sheetCount, "min_sheet_count", "max_sheet_count")).forEach(([k, v]) => params.set(k, v));
       if (f.searchInLyric) params.set("search_lyric", "1");
+      if (f.sortBy) params.set("sort_by", f.sortBy);
       const res = await fetch(`${API}/api/songs/manage?${params}`);
       if (!res.ok) return;
       const data: Song[] = await res.json();

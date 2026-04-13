@@ -8,6 +8,7 @@ import { styleToParams, DEFAULT_STYLE } from "../../_components/LyricHtmlPanel";
 import SessionSelector from "../../_components/SessionSelector";
 import SongSearch from "../../_components/SongSearch";
 import DrinkSelector from "../../_components/DrinkSelector";
+import DeleteButton from "../../_components/DeleteButton";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -184,6 +185,11 @@ function UserLyricContent() {
   const [error, setError] = useState("");
   const [editingItem, setEditingItem] = useState<QueueItem | null>(null);
 
+  const handleDelete = async (id: string) => {
+    await fetch(`${API}/api/queue/registrations/${id}`, { method: "DELETE" });
+    setItems(prev => prev.filter(i => i.registration_id !== id));
+  };
+
   // Name search state (shown when no userId yet)
   const [searchName, setSearchName] = useState("");
   const [suggestions, setSuggestions] = useState<UserSuggestion[]>([]);
@@ -340,14 +346,23 @@ function UserLyricContent() {
                       <span className="text-xs text-blue-500">Xem lời →</span>
                     )}
                     {item.status !== "done" && (
-                      <button
-                        type="button"
-                        onClick={e => { e.stopPropagation(); setEditingItem(item); }}
-                        className="text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors mt-0.5"
-                        title="Chỉnh sửa đăng ký"
-                      >
-                        ✏️
-                      </button>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); setEditingItem(item); }}
+                          className="text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                          title="Chỉnh sửa đăng ký"
+                        >
+                          ✏️
+                        </button>
+                        <span onClick={e => e.stopPropagation()}>
+                          <DeleteButton
+                            title="Xoá đăng ký?"
+                            onDelete={() => handleDelete(item.registration_id)}
+                            className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                          />
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>

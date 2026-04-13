@@ -107,16 +107,13 @@ export default function LyricHtmlStyleBar({ style, onChange, onClose }: Props) {
       </button>
 
       {onClose && (
-        <>
-          <div className="w-px h-4 bg-gray-700" />
-          <button
-            onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded bg-gray-700 hover:bg-red-700 text-gray-400 hover:text-white text-sm transition-colors"
-            title="Ẩn thanh điều chỉnh"
-          >
-            ✕
-          </button>
-        </>
+        <button
+          onClick={onClose}
+          className="ml-auto w-7 h-7 flex items-center justify-center rounded bg-gray-700 hover:bg-red-700 text-gray-400 hover:text-white text-sm transition-colors"
+          title="Ẩn thanh điều chỉnh"
+        >
+          ✕
+        </button>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import DeleteButton from "../../../_components/DeleteButton";
 
 type Song = {
   id: string;
@@ -38,13 +39,13 @@ export default function SongListItem({ song, onDelete }: Props) {
         </div>
       </div>
 
-      <button
-        onClick={e => { e.stopPropagation(); onDelete(song.id); }}
-        className="ml-3 p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
-        title="Xoá bài hát"
-      >
-        🗑
-      </button>
+      <div className="ml-3 shrink-0" onClick={e => e.stopPropagation()}>
+        <DeleteButton
+          title="Xoá bài hát?"
+          onDelete={() => onDelete(song.id)}
+          className="p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+        />
+      </div>
     </div>
   );
 }

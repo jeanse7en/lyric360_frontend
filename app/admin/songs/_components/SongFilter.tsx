@@ -5,6 +5,14 @@ import { useEffect, useRef, useState } from "react";
 type VerifyStatus = "UNVERIFIED_ALL" | "UNVERIFIED_LYRIC" | "UNVERIFIED_SHEET" | "VERIFIED" | "";
 type LyricCharsPreset = "" | "0-499" | "500-999" | "1000-1999" | ">=2000";
 type CountPreset = "" | "0" | "1" | "2-4" | ">=5";
+type SortPreset = "last_viewed_at" | "created_at" | "title" | "last_updated_at";
+
+const SORT_OPTIONS: { label: string; value: SortPreset }[] = [
+  { label: "Xem gần đây", value: "last_viewed_at" },
+  { label: "Cập nhật gần đây", value: "last_updated_at" },
+  { label: "Mới thêm", value: "created_at" },
+  { label: "Tên A-Z", value: "title" },
+];
 
 const VERIFY_FILTERS: { label: string; value: VerifyStatus }[] = [
   { label: "Tất cả", value: "" },
@@ -36,6 +44,7 @@ export type SongFilters = {
   lyricCount: CountPreset;
   sheetCount: CountPreset;
   searchInLyric: boolean;
+  sortBy: SortPreset;
 };
 
 export const DEFAULT_FILTERS: SongFilters = {
@@ -44,6 +53,7 @@ export const DEFAULT_FILTERS: SongFilters = {
   lyricCount: "",
   sheetCount: "",
   searchInLyric: false,
+  sortBy: "last_viewed_at",
 };
 
 function countActiveFilters(f: SongFilters): number {
@@ -96,7 +106,7 @@ type Props = {
   onFiltersChange: (filters: SongFilters) => void;
 };
 
-export type { VerifyStatus, LyricCharsPreset, CountPreset };
+export type { VerifyStatus, LyricCharsPreset, CountPreset, SortPreset };
 
 export default function SongFilter({ query, filters, onQueryChange, onFiltersChange }: Props) {
   const [open, setOpen] = useState(false);
@@ -159,6 +169,13 @@ export default function SongFilter({ query, filters, onQueryChange, onFiltersCha
                   </button>
                 )}
               </div>
+
+              <ChipGroup
+                label="Sắp xếp"
+                options={SORT_OPTIONS}
+                value={filters.sortBy}
+                onChange={v => update({ sortBy: v })}
+              />
 
               <ChipGroup
                 label="Trạng thái xác nhận"
