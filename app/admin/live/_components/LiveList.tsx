@@ -13,6 +13,7 @@ type NoteDialogState = {
 
 type Props = {
   queue: any[];
+  currentSongId?: string | null;
   onPlay: (queueId: string, songId: string) => void;
   onStop: (queueId: string) => void;
   onViewSong: (songId: string) => void;
@@ -29,11 +30,10 @@ const DRINK_LABELS: Record<string, string> = {
 };
 
 function getHtmlLyricId(item: any): string | null {
-  const lyric = item.songs?.song_lyrics?.find((l: any) => l.lyrics);
-  return lyric?.id ?? null;
+  return item.songs?.song_lyrics?.[0]?.id ?? null;
 }
 
-export default function LiveList({ queue, onPlay, onStop, onViewSong, onOpenNote, onPresent, onPresentHtml }: Props) {
+export default function LiveList({ queue, currentSongId, onPlay, onStop, onViewSong, onOpenNote, onPresent, onPresentHtml }: Props) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const router = useRouter();
 
@@ -79,6 +79,12 @@ export default function LiveList({ queue, onPlay, onStop, onViewSong, onOpenNote
                       )}
                     </div>
                   </div>
+                  {item.status === "playing" && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500 text-white" title="Đang diễn">● LIVE</span>
+                  )}
+                  {currentSongId === item.songs?.id && (
+                    <span className="text-blue-400 text-sm" title="Đang xem">👀</span>
+                  )}
                   <span className="text-gray-400 dark:text-gray-500 text-xs">{isOpen ? "▲" : "▼"}</span>
                 </div>
               </div>

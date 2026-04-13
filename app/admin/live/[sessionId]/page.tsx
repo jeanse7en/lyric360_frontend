@@ -25,7 +25,7 @@ export default function LiveDashboard() {
     const { data } = await supabase
       .from("queue_registrations")
       .select(`id, singer_name, booker_phone, table_position, drinks, status, actual_tone, note, rating, created_at,
-        songs ( id, title, author, song_sheets ( id, sheet_drive_url, tone_male, tone_female, verified_at ), song_lyrics ( id, lyrics, slide_drive_url, source_lyric, verified_at ) )`)
+        songs ( id, title, author, song_lyrics ( id ) )`)
       .eq("session_id", sessionId)
       .order("created_at", { ascending: true });
 
@@ -90,11 +90,19 @@ export default function LiveDashboard() {
     fetchQueue();
   };
 
+  const [currentSongDetail, setCurrentSongDetail] = useState<any>(null);
+
+  useEffect(() => {
+    if (!currentSongId) return;
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/songs/${currentSongId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setCurrentSongDetail(data); });
+  }, [currentSongId]);
+
   const [queueOpen, setQueueOpen] = useState(false);
 
-  const currentSong = queue.find(q => q.songs?.id === currentSongId)?.songs;
-  const sheets = currentSong?.song_sheets ?? [];
-  const lyrics = currentSong?.song_lyrics ?? [];
+  const sheets = currentSongDetail?.sheets ?? [];
+  const lyrics = currentSongDetail?.lyrics ?? [];
   const waitingCount = queue.filter(q => q.status === "waiting").length;
 
   const handleViewSongAndCollapse = (songId: string) => {
@@ -110,6 +118,7 @@ export default function LiveDashboard() {
         <div className="hidden md:block md:w-1/3 shrink-0">
           <LiveList
             queue={queue}
+            currentSongId={currentSongId}
             onPlay={handlePlay}
             onStop={handleStop}
             onViewSong={handleViewSong}
@@ -125,6 +134,7 @@ export default function LiveDashboard() {
             <div className="w-80 max-w-[85vw] h-full overflow-y-auto bg-white dark:bg-gray-900 shadow-2xl">
               <LiveList
                 queue={queue}
+                currentSongId={currentSongId}
                 onPlay={handlePlay}
                 onStop={handleStop}
                 onViewSong={handleViewSongAndCollapse}
