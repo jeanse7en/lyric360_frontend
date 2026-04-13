@@ -103,7 +103,11 @@ function SongsPageInner() {
       if (!res.ok) return;
       const data: Song[] = await res.json();
       setHasMore(data.length === 20);
-      setSongs(prev => append ? [...prev, ...data] : data);
+      setSongs(prev => {
+        if (!append) return data;
+        const seen = new Set(prev.map(s => s.id));
+        return [...prev, ...data.filter(s => !seen.has(s.id))];
+      });
     } finally { setLoading(false); }
   };
 
