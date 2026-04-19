@@ -20,6 +20,7 @@ type Props = {
   onOpenNote: (state: NoteDialogState) => void;
   onPresent?: (url: string) => void;
   onPresentHtml?: (lyricId: string) => void;
+  onRefresh?: () => void;
 };
 
 const DRINK_LABELS: Record<string, string> = {
@@ -33,9 +34,17 @@ function getHtmlLyricId(item: any): string | null {
   return item.songs?.song_lyrics?.[0]?.id ?? null;
 }
 
-export default function LiveList({ queue, currentSongId, onPlay, onStop, onViewSong, onOpenNote, onPresent, onPresentHtml }: Props) {
+export default function LiveList({ queue, currentSongId, onPlay, onStop, onViewSong, onOpenNote, onPresent, onPresentHtml, onRefresh }: Props) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [spinning, setSpinning] = useState(false);
   const router = useRouter();
+
+  const handleRefresh = () => {
+    if (!onRefresh || spinning) return;
+    setSpinning(true);
+    onRefresh();
+    setTimeout(() => setSpinning(false), 600);
+  };
 
   const toggle = (id: string) => setOpenMenuId(prev => prev === id ? null : id);
 
@@ -44,6 +53,15 @@ export default function LiveList({ queue, currentSongId, onPlay, onStop, onViewS
       <div className="flex items-center gap-3 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
         <a href="/admin/live" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">← Quay lại</a>
         <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400">Hàng Đợi Hát (Live)</h2>
+        {onRefresh && (
+          <button
+            onClick={handleRefresh}
+            className="ml-auto w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
+            title="Làm mới hàng đợi"
+          >
+            <span style={{ display: "inline-block", transition: "transform 0.6s ease", transform: spinning ? "rotate(360deg)" : "rotate(0deg)" }}>↺</span>
+          </button>
+        )}
       </div>
 
       <div className="space-y-2">

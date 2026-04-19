@@ -1,5 +1,3 @@
-import vi from "../../lib/vi";
-
 type Props = {
   url: string;
   title: string;
@@ -24,9 +22,9 @@ export default function FullscreenOverlay({ url, title, onClose, onStopLive }: P
           )}
           <button
             onClick={onClose}
-            className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-lg font-bold text-lg shadow-lg"
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-700 hover:bg-red-600 text-white text-sm transition-colors"
           >
-            {vi.fullscreen.closeBtn}
+            ✕
           </button>
         </div>
       </div>

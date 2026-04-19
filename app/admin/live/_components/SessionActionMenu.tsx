@@ -49,29 +49,19 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
           </button>
         )}
         {session.status === "live" && (
-          <>
-            <button
-              onClick={() => router.push(`/admin/live/${session.id}`)}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
-            >
-              🎵 Vào trang Live
-            </button>
-            <button
-              onClick={() => onStop(session.id)}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 hover:bg-red-500 text-white transition-colors"
-            >
-              ⏹ Kết thúc
-            </button>
-          </>
-        )}
-        {session.status === "ended" && (
           <button
-            onClick={() => router.push(`/admin/live/${session.id}`)}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-600 hover:bg-gray-500 text-white transition-colors"
+            onClick={() => onStop(session.id)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 hover:bg-red-500 text-white transition-colors"
           >
-            📋 Xem lại
+            ⏹ Kết thúc
           </button>
         )}
+        <button
+            onClick={() => router.push(`/admin/live/${session.id}`)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+        >
+          🎵 Xem
+        </button>
         <button
           onClick={() => onEdit(session)}
           className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-white transition-colors"

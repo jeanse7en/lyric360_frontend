@@ -125,6 +125,7 @@ export default function LiveDashboard() {
             onOpenNote={setNoteDialog}
             onPresent={handlePresent}
             onPresentHtml={handlePresentHtml}
+            onRefresh={fetchQueue}
           />
         </div>
 
@@ -140,6 +141,7 @@ export default function LiveDashboard() {
                 onViewSong={handleViewSongAndCollapse}
                 onOpenNote={setNoteDialog}
                 onPresentHtml={handlePresentHtml}
+                onRefresh={fetchQueue}
               />
             </div>
             {/* Backdrop */}
