@@ -4,12 +4,8 @@ const FONT_OPTIONS = ["Arial", "Georgia", "Times New Roman", "Courier New", "Ver
 
 type Theme = { label: string; bg: string; c1: string; c2: string };
 const THEMES: Theme[] = [
-  { label: "Vàng",    bg: "#000000", c1: "#FFD700", c2: "#FFFFFF" },
-  { label: "Hồng",   bg: "#0d0010", c1: "#FF69B4", c2: "#FFD6F0" },
-  { label: "Xanh",   bg: "#000a1a", c1: "#00BFFF", c2: "#E0F7FF" },
-  { label: "Xanh lá",bg: "#001a0a", c1: "#39FF14", c2: "#CCFFCC" },
-  { label: "Đỏ",     bg: "#1a0000", c1: "#FF4444", c2: "#FFD0D0" },
-  { label: "Trắng",  bg: "#FFFFFF", c1: "#1a1a1a", c2: "#444444" },
+  { label: "Nền Xanh Chữ Trắng Vàng",  bg: "#001F3F", c1: "#FFD700", c2: "#FFFFFF"  },
+  { label: "Nền Đèn Chữ Trắng Vàng",    bg: "#000000", c1: "#FFD700", c2: "#FFFFFF" },
 ];
 
 export type LyricHtmlStyle = {
@@ -23,7 +19,7 @@ export type LyricHtmlStyle = {
 };
 
 export const DEFAULT_STYLE: LyricHtmlStyle = {
-  bgColor: "#000000",
+  bgColor: "#001F3F",
   color1: "#FFD700",
   color2: "#FFFFFF",
   fontFamily: "Times New Roman",
@@ -57,7 +53,7 @@ export default function LyricHtmlStyleBar({ style, onChange, onClose }: Props) {
             className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${
               activeTheme === i ? "border-white scale-110" : "border-transparent"
             }`}
-            style={{ background: `linear-gradient(135deg, ${t.c1} 50%, ${t.c2} 50%)`, outline: `2px solid ${t.bg}` }}
+            style={{ background: `conic-gradient(${t.bg} 0deg 120deg, ${t.c1} 120deg 240deg, ${t.c2} 240deg 360deg)` }}
           />
         ))}
       </div>
