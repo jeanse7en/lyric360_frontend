@@ -213,7 +213,7 @@ export default function MobileRegistration() {
                   recentSongs={recentSongs}
                 />
                 <ToneInput value={tone} onChange={setTone} />
-                <DrinkSelector selected={selectedDrinks} onChange={setSelectedDrinks} />
+                {/*<DrinkSelector selected={selectedDrinks} onChange={setSelectedDrinks} />*/}
                 <button
                   suppressHydrationWarning
                   type="submit"
