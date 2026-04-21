@@ -62,6 +62,14 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
         >
           🎵 Xem
         </button>
+        {session.status === "ended" && (
+          <button
+            onClick={() => router.push(`/admin/live/${session.id}/video-cut`)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors"
+          >
+            ✂ Cắt video
+          </button>
+        )}
         <button
           onClick={() => onEdit(session)}
           className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-white transition-colors"
