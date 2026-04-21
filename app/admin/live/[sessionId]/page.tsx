@@ -112,6 +112,14 @@ export default function LiveDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-6 font-sans">
+      <div className="max-w-7xl mx-auto mb-3 flex justify-end">
+        <a
+          href={`/admin/live/${sessionId}/video-cut`}
+          className="text-xs px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors"
+        >
+          ✂ Cắt video
+        </a>
+      </div>
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
 
         {/* Desktop sidebar — always visible on md+ */}
