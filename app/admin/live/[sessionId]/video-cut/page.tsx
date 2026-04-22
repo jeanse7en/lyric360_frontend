@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { SegmentState, formatTime } from "./_components/VideoTimeline";
 import SegmentPreview from "./_components/SegmentPreview";
 import { useFFmpeg } from "./_components/useFFmpeg";
-import { getMp4CreationTime } from "./_components/Mp4CreationTime";
+import { getMp4CreationTime } from "./_components/parseMp4Time";
 import vi from "@/lib/vi";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
