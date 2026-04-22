@@ -92,6 +92,35 @@ const vi = {
   fullscreen: {
     closeBtn: '✖ Đóng',
   },
+  videoCut: {
+    statusLabel: {
+      idle: 'Chờ',
+      cutting: 'Đang cắt...',
+      uploading: 'Đang tải...',
+      done: 'Xong',
+      error: 'Lỗi',
+    },
+    statusBadge: {
+      idle: 'bg-gray-600 text-gray-300',
+      cutting: 'bg-yellow-600 text-yellow-100 animate-pulse',
+      uploading: 'bg-blue-600 text-blue-100 animate-pulse',
+      done: 'bg-green-700 text-green-200',
+      error: 'bg-red-700 text-red-200',
+    },
+    editBtn: 'Sửa lại',
+    cutBtn: '✂ Cắt & Tải lên Drive',
+    cuttingBtn: 'Đang cắt...',
+    uploadingBtn: 'Đang tải lên Drive...',
+    cutAllBtn: 'Cắt tất cả',
+    processingBtn: 'Đang xử lý...',
+    loadingFFmpeg: 'Đang tải FFmpeg...',
+    driveLink: 'Drive ↗',
+    noTimeData: 'Chưa có dữ liệu thời gian',
+    pickVideo: 'Chọn file video...',
+    pickVideoHint: 'Chọn file video ở danh sách bên trái',
+    selectSongHint: 'Chọn một bài để xem và điều chỉnh',
+    videoStartLabel: 'Video bắt đầu lúc:',
+  },
 } as const;
 
 export default vi;

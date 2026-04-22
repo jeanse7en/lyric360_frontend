@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { SegmentState, formatTime } from "./_components/VideoTimeline";
 import SegmentPreview from "./_components/SegmentPreview";
 import { useFFmpeg } from "./_components/useFFmpeg";
+import { getMp4CreationTime } from "./_components/Mp4CreationTime";
+import vi from "@/lib/vi";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -43,17 +45,8 @@ function isoToDatetimeLocal(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-const STATUS_BADGE: Record<SegmentState["status"], string> = {
-  idle: "bg-gray-600 text-gray-300",
-  cutting: "bg-yellow-600 text-yellow-100 animate-pulse",
-  uploading: "bg-blue-600 text-blue-100 animate-pulse",
-  done: "bg-green-700 text-green-200",
-  error: "bg-red-700 text-red-200",
-};
-
-const STATUS_LABEL: Record<SegmentState["status"], string> = {
-  idle: "Chờ", cutting: "Đang cắt...", uploading: "Đang tải...", done: "Xong", error: "Lỗi",
-};
+const STATUS_BADGE = vi.videoCut.statusBadge;
+const STATUS_LABEL = vi.videoCut.statusLabel;
 
 export default function VideoCutPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -66,7 +59,7 @@ export default function VideoCutPage() {
 
   const [videoStartInput, setVideoStartInput] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoLastModified, setVideoLastModified] = useState<number | null>(null);
+  const [videoSaveTime, setVideoSaveTime] = useState<number | null>(null); // ms, from mp4 metadata or lastModified
   const [videoObjectUrl, setVideoObjectUrl] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -116,9 +109,13 @@ export default function VideoCutPage() {
     if (!file) return;
     if (videoObjectUrl) URL.revokeObjectURL(videoObjectUrl);
     setVideoFile(file);
-    setVideoLastModified(file.lastModified);
     setVideoObjectUrl(URL.createObjectURL(file));
     setError(null);
+
+    // Prefer MP4 embedded creation_time (survives file transfer), fall back to lastModified
+    const mp4Date = await getMp4CreationTime(file);
+    setVideoSaveTime(mp4Date ? mp4Date.getTime() : file.lastModified);
+
     if (!ffmpegLoaded) await loadFFmpeg();
   }, [videoObjectUrl, ffmpegLoaded, loadFFmpeg]);
 
@@ -148,10 +145,13 @@ export default function VideoCutPage() {
     });
   }, [selectedIndex]);
 
+  const handleEdit = useCallback((index: number) => {
+    updateSegment(index, { status: "idle" });
+  }, [updateSegment]);
+
   const processSegment = useCallback(async (index: number) => {
     if (!videoFile || !ffmpegLoaded) return;
     const seg = segments[index];
-    if (seg.status === "done") return;
     updateSegment(index, { status: "cutting" });
     try {
       const blob = await cut(videoFile, seg.startSeconds, seg.durationSeconds);
@@ -182,6 +182,7 @@ export default function VideoCutPage() {
     setProcessing(true);
     setError(null);
     for (let i = 0; i < segments.length; i++) {
+      // Skip already-done segments; user must click "Sửa lại" individually to re-cut
       if (segments[i].status !== "done") await processSegment(i);
     }
     setProcessing(false);
@@ -204,7 +205,7 @@ export default function VideoCutPage() {
         </div>
 
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2 sm:ml-4">
-          <label className="text-xs text-gray-400">Video bắt đầu lúc:</label>
+          <label className="text-xs text-gray-400">{vi.videoCut.videoStartLabel}</label>
           <input
             type="datetime-local"
             value={videoStartInput}
@@ -214,14 +215,14 @@ export default function VideoCutPage() {
         </div>
 
         <div className="flex items-center gap-2 sm:ml-auto">
-          {ffmpegLoading && <span className="text-xs text-yellow-400">Đang tải FFmpeg...</span>}
+          {ffmpegLoading && <span className="text-xs text-yellow-400">{vi.videoCut.loadingFFmpeg}</span>}
           {error && <span className="text-xs text-red-400 truncate max-w-xs">{error}</span>}
           <button
             onClick={handleCutAll}
             disabled={!videoFile || !ffmpegLoaded || processing || segments.length === 0}
             className="text-xs px-3 py-1.5 rounded bg-green-600 hover:bg-green-500 text-white disabled:opacity-40"
           >
-            {processing ? "Đang xử lý..." : "Cắt tất cả"}
+            {processing ? vi.videoCut.processingBtn : vi.videoCut.cutAllBtn}
           </button>
         </div>
       </div>
@@ -238,7 +239,7 @@ export default function VideoCutPage() {
               {videoFile ? (
                 <span className="text-xs text-gray-300 truncate block">{videoFile.name}</span>
               ) : (
-                <span className="text-xs text-gray-400">Chọn file video...</span>
+                <span className="text-xs text-gray-400">{vi.videoCut.pickVideo}</span>
               )}
             </div>
             <input type="file" accept="video/*" className="hidden" onChange={handleFileChange} />
@@ -282,8 +283,16 @@ export default function VideoCutPage() {
                           onClick={(e) => e.stopPropagation()}
                           className="text-[10px] text-green-400 hover:text-green-300 underline"
                         >
-                          Drive ↗
+                          {vi.videoCut.driveLink}
                         </a>
+                      )}
+                      {seg.status === "done" && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleEdit(i); }}
+                          className="text-[10px] text-gray-400 hover:text-white"
+                        >
+                          {vi.videoCut.editBtn}
+                        </button>
                       )}
                     </div>
                   </li>
@@ -316,8 +325,8 @@ export default function VideoCutPage() {
                   className="w-full bg-black object-contain max-h-[40vh] md:max-h-none md:h-full"
                   onLoadedMetadata={() => {
                     const dur = videoRef.current?.duration ?? 0;
-                    if (videoLastModified && dur > 0) {
-                      const autoIso = new Date(videoLastModified - dur * 1000).toISOString();
+                    if (videoSaveTime && dur > 0) {
+                      const autoIso = new Date(videoSaveTime - dur * 1000).toISOString();
                       setVideoStartInput(isoToDatetimeLocal(autoIso));
                       setSegments((prev) =>
                         computeOffsets(rawSegments, autoIso).map((s, i) => ({
@@ -367,16 +376,23 @@ export default function VideoCutPage() {
                   onAdjust={handleAdjust}
                 />
 
-                {/* Cut button */}
-                {selected.status !== "done" && (
+                {/* Cut / Edit buttons */}
+                {selected.status === "done" ? (
+                  <button
+                    onClick={() => handleEdit(selectedIndex!)}
+                    className="w-full py-2.5 rounded-lg text-sm font-medium bg-gray-600 hover:bg-gray-500 text-white transition-colors"
+                  >
+                    {vi.videoCut.editBtn}
+                  </button>
+                ) : (
                   <button
                     onClick={handleCutSelected}
                     disabled={processing || !ffmpegLoaded}
                     className="w-full py-2.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-40 transition-colors"
                   >
-                    {selected.status === "cutting" ? "Đang cắt..."
-                      : selected.status === "uploading" ? "Đang tải lên Drive..."
-                      : "✂ Cắt & Tải lên Drive"}
+                    {selected.status === "cutting" ? vi.videoCut.cuttingBtn
+                      : selected.status === "uploading" ? vi.videoCut.uploadingBtn
+                      : vi.videoCut.cutBtn}
                   </button>
                 )}
               </div>

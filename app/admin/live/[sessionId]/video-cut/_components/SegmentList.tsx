@@ -1,31 +1,20 @@
 "use client";
 
 import { SegmentState, formatTime } from "./VideoTimeline";
+import vi from "@/lib/vi";
 
 type Props = {
   segments: SegmentState[];
   onAdjust: (index: number, field: "startSeconds" | "durationSeconds", value: number) => void;
   onCutOne: (index: number) => void;
   onCutAll: () => void;
+  onEdit: (index: number) => void;
   processing: boolean;
   videoLoaded: boolean;
 };
 
-const STATUS_BADGE: Record<SegmentState["status"], string> = {
-  idle: "bg-gray-600 text-gray-300",
-  cutting: "bg-yellow-600 text-yellow-100 animate-pulse",
-  uploading: "bg-blue-600 text-blue-100 animate-pulse",
-  done: "bg-green-700 text-green-200",
-  error: "bg-red-700 text-red-200",
-};
-
-const STATUS_LABEL: Record<SegmentState["status"], string> = {
-  idle: "Chờ",
-  cutting: "Đang cắt...",
-  uploading: "Đang tải...",
-  done: "Xong",
-  error: "Lỗi",
-};
+const STATUS_BADGE = vi.videoCut.statusBadge;
+const STATUS_LABEL = vi.videoCut.statusLabel;
 
 function SecondsInput({
   label,
@@ -62,6 +51,7 @@ export default function SegmentList({
   onAdjust,
   onCutOne,
   onCutAll,
+  onEdit,
   processing,
   videoLoaded,
 }: Props) {
@@ -159,6 +149,14 @@ export default function SegmentList({
                             Cắt
                           </button>
                         )}
+                        {seg.status === "done" && (
+                          <button
+                            onClick={() => onEdit(i)}
+                            className="text-xs text-gray-400 hover:text-white"
+                          >
+                            {vi.videoCut.editBtn}
+                          </button>
+                        )}
                       </div>
                     </td>
                     <td className="py-2">
@@ -169,7 +167,7 @@ export default function SegmentList({
                           rel="noopener noreferrer"
                           className="text-xs text-green-400 hover:text-green-300 underline"
                         >
-                          Drive ↗
+                          {vi.videoCut.driveLink}
                         </a>
                       ) : (
                         <span className="text-gray-600 text-xs">—</span>
