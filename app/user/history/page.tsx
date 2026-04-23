@@ -24,6 +24,7 @@ type QueueItem = {
   session_date: string;
   session_id: string;
   drinks: string[];
+  video_url?: string | null;
 };
 
 type Song = { id: string; title: string; author?: string };
@@ -344,6 +345,17 @@ function UserLyricContent() {
                     </span>
                     {item.lyric_id && (
                       <span className="text-xs text-blue-500">Xem lời →</span>
+                    )}
+                    {item.video_url && (
+                      <a
+                        href={item.video_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="text-xs text-green-500 hover:text-green-400 underline"
+                      >
+                        🎬 Xem video ↗
+                      </a>
                     )}
                     {item.status !== "done" && (
                       <div className="flex items-center gap-1 mt-0.5">
