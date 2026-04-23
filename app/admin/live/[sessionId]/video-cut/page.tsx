@@ -181,9 +181,7 @@ export default function VideoCutPage() {
 
       // Build filename: Singer_SongName_HHmm.mp4
       const timeTag = new Date(seg.actualStartIso).toLocaleTimeString("vi", { hour: "2-digit", minute: "2-digit", hour12: false }).replace(":", "");
-      const safeSinger = seg.singerName.replace(/[^a-zA-Z0-9 _-]/g, "_").slice(0, 30);
-      const safeTitle = seg.songTitle.replace(/[^a-zA-Z0-9 _-]/g, "_").slice(0, 50);
-      const filename = `${safeSinger}_${safeTitle}_${timeTag}.mp4`;
+      const filename = `${seg.singerName}_${seg.songTitle}_${timeTag}.mp4`;
 
       const { webViewLink } = await uploadFile(blob, filename, folderId);
 

@@ -110,9 +110,11 @@ export default function LiveList({ queue, currentSongId, onPlay, onStop, onViewS
               {/* Action row */}
               {isOpen && (
                 <div className="flex gap-2 px-1 pt-1 pb-2 flex-wrap">
-                  {item.status === "waiting" && (
+                  {(item.status === "waiting" || item.status === "done") && (
                     <button
                       onClick={() => {
+                        const playing = queue.find(i => i.status === "playing");
+                        if (playing) onStop(playing.id);
                         onPlay(item.id, item.songs.id);
                         if (htmlLyricId && onPresentHtml) onPresentHtml(htmlLyricId);
                         setOpenMenuId(null);
