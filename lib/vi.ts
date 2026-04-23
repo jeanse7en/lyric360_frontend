@@ -120,6 +120,7 @@ const vi = {
     pickVideoHint: 'Chọn file video ở danh sách bên trái',
     selectSongHint: 'Chọn một bài để xem và điều chỉnh',
     videoStartLabel: 'Video bắt đầu lúc:',
+    videoEndLabel: 'Video kết thúc lúc:',
   },
 } as const;
 

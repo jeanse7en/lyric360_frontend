@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { SegmentState, formatTime } from "./_components/VideoTimeline";
 import SegmentPreview from "./_components/SegmentPreview";
 import { useFFmpeg } from "./_components/useFFmpeg";
+import { useDriveUpload } from "./_components/useDriveUpload";
 import { getMp4StartTime } from "./_components/parseMp4Time";
 import vi from "@/lib/vi";
 
@@ -60,6 +61,7 @@ export default function VideoCutPage() {
   const [videoStartInput, setVideoStartInput] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoSaveTime, setVideoSaveTime] = useState<number | null>(null); // ms, from mp4 metadata or lastModified
+  const [videoDuration, setVideoDuration] = useState<number>(0);
   const [videoObjectUrl, setVideoObjectUrl] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -67,13 +69,22 @@ export default function VideoCutPage() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Drive folder for this session (persisted in DB)
+  const [driveFolderId, setDriveFolderId] = useState<string | null>(null);
+  const [driveFolderName, setDriveFolderName] = useState("");
+  const [driveParentId, setDriveParentId] = useState("root");
+
   const { loaded: ffmpegLoaded, loading: ffmpegLoading, load: loadFFmpeg, cut } = useFFmpeg();
+  const { authorized, getToken, createFolder, uploadFile, deleteFile } = useDriveUpload();
 
   // Fetch segments
   useEffect(() => {
     fetch(`${API}/api/sessions/${sessionId}/video-segments`)
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then((data) => {
+        setDriveFolderId(data.video_folder_id ?? null);
+        setDriveFolderName(data.video_folder_name ?? "");
+        setDriveParentId(data.parent_folder_id ?? "root");
         const raws: RawSegment[] = data.segments ?? [];
         setRawSegments(raws);
         const firstStart = raws[0]?.actual_start_iso ?? new Date().toISOString();
@@ -149,19 +160,46 @@ export default function VideoCutPage() {
     try {
       const blob = await cut(videoFile, seg.startSeconds, seg.durationSeconds);
       updateSegment(index, { status: "uploading" });
-      const form = new FormData();
-      form.append("file", blob, "clip.mp4");
-      const res = await fetch(`${API}/api/queue/registrations/${seg.registrationId}/video-url`, {
-        method: "POST", body: form,
+
+      // Ensure Drive folder exists for this session
+      let folderId = driveFolderId;
+      if (!folderId) {
+        folderId = await createFolder(driveFolderName, driveParentId);
+        setDriveFolderId(folderId);
+        await fetch(`${API}/api/sessions/${sessionId}/video-folder`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ folder_id: folderId }),
+        });
+      }
+
+      // Delete old file from Drive if re-uploading
+      if (seg.videoUrl) {
+        const m = seg.videoUrl.match(/\/file\/d\/([^/]+)/);
+        if (m) await deleteFile(m[1]);
+      }
+
+      // Build filename: Singer_SongName_HHmm.mp4
+      const timeTag = new Date(seg.actualStartIso).toLocaleTimeString("vi", { hour: "2-digit", minute: "2-digit", hour12: false }).replace(":", "");
+      const safeSinger = seg.singerName.replace(/[^a-zA-Z0-9 _-]/g, "_").slice(0, 30);
+      const safeTitle = seg.songTitle.replace(/[^a-zA-Z0-9 _-]/g, "_").slice(0, 50);
+      const filename = `${safeSinger}_${safeTitle}_${timeTag}.mp4`;
+
+      const { webViewLink } = await uploadFile(blob, filename, folderId);
+
+      // Save URL to backend
+      await fetch(`${API}/api/queue/registrations/${seg.registrationId}/video-url`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ video_url: webViewLink }),
       });
-      if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
-      const { video_url } = await res.json();
-      updateSegment(index, { status: "done", videoUrl: video_url });
+
+      updateSegment(index, { status: "done", videoUrl: webViewLink });
     } catch (err) {
       updateSegment(index, { status: "error" });
       setError(String(err));
     }
-  }, [videoFile, ffmpegLoaded, segments, cut, updateSegment]);
+  }, [videoFile, ffmpegLoaded, segments, cut, updateSegment, driveFolderId, driveFolderName, driveParentId, sessionId, createFolder, uploadFile, deleteFile]);
 
   const handleCutSelected = useCallback(async () => {
     if (selectedIndex === null) return;
@@ -204,10 +242,28 @@ export default function VideoCutPage() {
             value={videoStartInput}
             onChange={handleVideoStartChange}
             className="text-xs bg-gray-800 border border-gray-600 text-white rounded px-2 py-1 w-full sm:w-auto"
-          />
+          />{videoDuration > 0 && videoStartInput && (
+            <>
+              <label className="text-xs text-gray-400">{vi.videoCut.videoEndLabel}</label>
+              <span className="text-xs text-gray-300">
+                {isoToDatetimeLocal(
+                  new Date(new Date(videoStartInput).getTime() + videoDuration * 1000).toISOString()
+                ).replace("T", " ")}
+              </span>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-2 sm:ml-auto">
+          {!authorized && (
+            <button
+              onClick={() => getToken().catch(() => {})}
+              className="text-xs px-3 py-1.5 rounded bg-yellow-600 hover:bg-yellow-500 text-white"
+            >
+              🔑 Kết nối Drive
+            </button>
+          )}
+          {authorized && <span className="text-xs text-green-400">✓ Drive</span>}
           {ffmpegLoading && <span className="text-xs text-yellow-400">{vi.videoCut.loadingFFmpeg}</span>}
           {error && <span className="text-xs text-red-400 truncate max-w-xs">{error}</span>}
           <button
@@ -321,6 +377,7 @@ export default function VideoCutPage() {
                   className="w-full bg-black object-contain max-h-[40vh] md:max-h-none md:h-full"
                   onLoadedMetadata={() => {
                     const dur = videoRef.current?.duration ?? 0;
+                    setVideoDuration(dur);
                     if (videoSaveTime && dur > 0) {
                       const autoIso = new Date(videoSaveTime).toISOString();
                       setVideoStartInput(isoToDatetimeLocal(autoIso));
