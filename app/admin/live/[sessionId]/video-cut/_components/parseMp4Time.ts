@@ -1,48 +1,73 @@
+const MP4_EPOCH_OFFSET_S = 2082844800; // seconds between Jan 1 1904 and Jan 1 1970
+const SCAN_SIZE = 524288; // 512KB — enough for moov at either end
+
 /**
- * Read the creation_time field from an MP4 file's mvhd box.
- * This survives file transfers unlike filesystem timestamps.
- * Returns null if not found or not an MP4.
+ * Returns the video recording START time from an MP4 file's mvhd box.
+ * Cameras that write moov at the end store creation_time as the END time,
+ * so we compute: start = creation_time − duration.
+ * Searches both the first and last 512KB to handle both moov-first and moov-last files.
  */
-export async function getMp4CreationTime(file: File): Promise<Date | null> {
-  // Read first 128KB — mvhd is always near the start of a valid MP4
-  const buffer = await file.slice(0, 131072).arrayBuffer();
+export async function getMp4StartTime(file: File): Promise<Date | null> {
+  const chunks: ArrayBuffer[] = [];
+
+  // Always read the start
+  chunks.push(await file.slice(0, SCAN_SIZE).arrayBuffer());
+
+  // Also read the end if file is large enough that moov might be there
+  if (file.size > SCAN_SIZE * 2) {
+    chunks.push(await file.slice(file.size - SCAN_SIZE).arrayBuffer());
+  }
+
+  for (const buffer of chunks) {
+    const result = parseMvhd(buffer);
+    if (result) return result;
+  }
+  return null;
+}
+
+function parseMvhd(buffer: ArrayBuffer): Date | null {
   const view = new DataView(buffer);
   const len = buffer.byteLength;
+  const target = [0x6d, 0x76, 0x68, 0x64]; // 'mvhd'
 
-  // Scan for the 4-byte sequence 'm','v','h','d'
-  for (let i = 4; i < len - 16; i++) {
+  for (let i = 0; i < len - 32; i++) {
     if (
-      view.getUint8(i)     === 0x6d && // m
-      view.getUint8(i + 1) === 0x76 && // v
-      view.getUint8(i + 2) === 0x68 && // h
-      view.getUint8(i + 3) === 0x64    // d
-    ) {
-      // Box layout after the 4-byte type:
-      //   1 byte  version
-      //   3 bytes flags
-      //   then creation_time: 4 bytes (version 0) or 8 bytes (version 1)
-      const version = view.getUint8(i + 4);
+      view.getUint8(i)     !== target[0] ||
+      view.getUint8(i + 1) !== target[1] ||
+      view.getUint8(i + 2) !== target[2] ||
+      view.getUint8(i + 3) !== target[3]
+    ) continue;
 
-      let creationTimeSec: number;
-      if (version === 1) {
-        // 64-bit — JS can't do uint64 exactly, but high word is tiny for dates < 2038
-        const hi = view.getUint32(i + 8);
-        const lo = view.getUint32(i + 12);
-        creationTimeSec = hi * 4294967296 + lo;
-      } else {
-        creationTimeSec = view.getUint32(i + 8);
-      }
+    const base = i + 4; // skip 'mvhd'
+    const version = view.getUint8(base);
 
-      if (creationTimeSec === 0) return null;
+    let creationTimeSec: number;
+    let durationUnits: number;
+    let timescale: number;
 
-      // MP4 epoch = Jan 1 1904; Unix epoch = Jan 1 1970 → offset 2082844800 s
-      const unixMs = (creationTimeSec - 2082844800) * 1000;
-      const date = new Date(unixMs);
-
-      // Sanity check: must be between 2010 and 2040
-      if (date.getFullYear() < 2010 || date.getFullYear() > 2040) return null;
-      return date;
+    if (version === 1) {
+      const hiC = view.getUint32(base + 4);
+      const loC = view.getUint32(base + 8);
+      creationTimeSec = hiC * 4294967296 + loC;
+      timescale = view.getUint32(base + 20);
+      const hiD = view.getUint32(base + 24);
+      const loD = view.getUint32(base + 28);
+      durationUnits = hiD * 4294967296 + loD;
+    } else {
+      creationTimeSec = view.getUint32(base + 4);
+      timescale = view.getUint32(base + 12);
+      durationUnits = view.getUint32(base + 16);
     }
+
+    if (creationTimeSec === 0 || timescale === 0) return null;
+
+    const durationSec = durationUnits / timescale;
+    // creation_time is end time on cameras that write moov last; subtract duration to get start
+    const startUnixMs = (creationTimeSec - MP4_EPOCH_OFFSET_S - durationSec) * 1000;
+    const date = new Date(startUnixMs);
+
+    if (date.getFullYear() < 2010 || date.getFullYear() > 2040) return null;
+    return date;
   }
   return null;
 }

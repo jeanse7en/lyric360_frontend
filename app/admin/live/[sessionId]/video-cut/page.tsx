@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { SegmentState, formatTime } from "./_components/VideoTimeline";
 import SegmentPreview from "./_components/SegmentPreview";
 import { useFFmpeg } from "./_components/useFFmpeg";
-import { getMp4CreationTime } from "./_components/parseMp4Time";
+import { getMp4StartTime } from "./_components/parseMp4Time";
 import vi from "@/lib/vi";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -84,13 +84,6 @@ export default function VideoCutPage() {
       .finally(() => setLoadingSegments(false));
   }, [sessionId]);
 
-  // Seek video when selecting a song
-  useEffect(() => {
-    if (selectedIndex === null || !videoRef.current) return;
-    const seg = segments[selectedIndex];
-    if (seg) videoRef.current.currentTime = seg.startSeconds;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedIndex]);
 
   const handleVideoStartChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -112,8 +105,8 @@ export default function VideoCutPage() {
     setVideoObjectUrl(URL.createObjectURL(file));
     setError(null);
 
-    // Prefer MP4 embedded creation_time (survives file transfer), fall back to lastModified
-    const mp4Date = await getMp4CreationTime(file);
+    // Read actual recording start from MP4 mvhd (survives file transfer), fall back to lastModified
+    const mp4Date = await getMp4StartTime(file);
     setVideoSaveTime(mp4Date ? mp4Date.getTime() : file.lastModified);
 
     if (!ffmpegLoaded) await loadFFmpeg();
@@ -258,7 +251,10 @@ export default function VideoCutPage() {
                 {segments.map((seg, i) => (
                   <li
                     key={seg.registrationId}
-                    onClick={() => setSelectedIndex(i)}
+                    onClick={() => {
+                      setSelectedIndex(i);
+                      if (videoRef.current) videoRef.current.currentTime = seg.startSeconds;
+                    }}
                     className={`flex items-start gap-3 px-4 py-3 cursor-pointer border-b border-gray-800 transition-colors ${
                       selectedIndex === i
                         ? "bg-blue-900/40 border-l-2 border-l-blue-500"
@@ -326,7 +322,7 @@ export default function VideoCutPage() {
                   onLoadedMetadata={() => {
                     const dur = videoRef.current?.duration ?? 0;
                     if (videoSaveTime && dur > 0) {
-                      const autoIso = new Date(videoSaveTime - dur * 1000).toISOString();
+                      const autoIso = new Date(videoSaveTime).toISOString();
                       setVideoStartInput(isoToDatetimeLocal(autoIso));
                       setSegments((prev) =>
                         computeOffsets(rawSegments, autoIso).map((s, i) => ({
