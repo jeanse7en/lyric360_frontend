@@ -143,7 +143,7 @@ function EditModal({ item, onClose, onSaved }: EditModalProps) {
             recentSongs={[]}
           />
 
-          {/*<DrinkSelector selected={drinks} onChange={setDrinks} />*/}
+          <DrinkSelector selected={drinks} onChange={setDrinks} />
 
           {modalError && (
             <p className="text-sm text-red-500 dark:text-red-400">{modalError}</p>
