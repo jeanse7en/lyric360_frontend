@@ -23,7 +23,7 @@ export const DEFAULT_STYLE: LyricHtmlStyle = {
   color1: "#FFD700",
   color2: "#FFFFFF",
   fontFamily: "Times New Roman",
-  fontSize: 40,
+  fontSize: 24,
   singlePage: true,
   splitColumns: true,
 };
