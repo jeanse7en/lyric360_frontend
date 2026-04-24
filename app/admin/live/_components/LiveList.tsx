@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { fmtTime, fmtDateTime } from "../../../../lib/format";
 
 type NoteDialogState = {
   isOpen: boolean;
@@ -14,6 +15,7 @@ type NoteDialogState = {
 type Props = {
   queue: any[];
   currentSongId?: string | null;
+  sessionStartedAt?: string | null;
   onPlay: (queueId: string, songId: string) => void;
   onStop: (queueId: string) => void;
   onViewSong: (songId: string) => void;
@@ -34,7 +36,7 @@ function getHtmlLyricId(item: any): string | null {
   return item.songs?.song_lyrics?.[0]?.id ?? null;
 }
 
-export default function LiveList({ queue, currentSongId, onPlay, onStop, onViewSong, onOpenNote, onPresent, onPresentHtml, onRefresh }: Props) {
+export default function LiveList({ queue, currentSongId, sessionStartedAt, onPlay, onStop, onViewSong, onOpenNote, onPresent, onPresentHtml, onRefresh }: Props) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [spinning, setSpinning] = useState(false);
   const router = useRouter();
@@ -52,7 +54,12 @@ export default function LiveList({ queue, currentSongId, onPlay, onStop, onViewS
     <div className="w-full bg-white dark:bg-gray-800 rounded-xl p-4 shadow-2xl overflow-y-auto max-h-[90vh]">
       <div className="flex items-center gap-3 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
         <a href="/admin/live" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">← Quay lại</a>
-        <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400">Hàng Đợi Hát (Live)</h2>
+        <div>
+          <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400">Hàng Đợi Hát (Live)</h2>
+          {sessionStartedAt && (
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Bắt đầu: {fmtDateTime(sessionStartedAt)}</p>
+          )}
+        </div>
         {onRefresh && (
           <button
             onClick={handleRefresh}
@@ -96,6 +103,12 @@ export default function LiveList({ queue, currentSongId, onPlay, onStop, onViewS
                         </span>
                       )}
                     </div>
+                    {(item.actual_start || item.actual_end) && (
+                      <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                        {fmtTime(item.actual_start)}
+                        {item.actual_end && <> → {fmtTime(item.actual_end)}</>}
+                      </div>
+                    )}
                   </div>
                   {item.status === "playing" && (
                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500 text-white" title="Đang diễn">● LIVE</span>

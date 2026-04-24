@@ -20,11 +20,12 @@ export default function LiveDashboard() {
   const [queue, setQueue] = useState<any[]>([]);
   const [currentSongId, setCurrentSongId] = useState<string | null>(null);
   const [noteDialog, setNoteDialog] = useState({ isOpen: false, queueId: '', tone: '', note: '', rating: 5 });
+  const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(null);
 
   const fetchQueue = async () => {
     const { data } = await supabase
       .from("queue_registrations")
-      .select(`id, singer_name, booker_phone, table_position, drinks, status, actual_tone, note, rating, created_at,
+      .select(`id, singer_name, booker_phone, table_position, drinks, status, actual_tone, note, rating, created_at, actual_start, actual_end,
         songs ( id, title, author, song_lyrics ( id ) )`)
       .eq("session_id", sessionId)
       .order("created_at", { ascending: true });
@@ -34,6 +35,12 @@ export default function LiveDashboard() {
     const playingSong = (data as any[])?.find(item => item.status === "playing");
     if (playingSong && !currentSongId) setCurrentSongId(playingSong.songs.id);
   };
+
+  useEffect(() => {
+    if (!sessionId) return;
+    supabase.from("live_sessions").select("started_at").eq("id", sessionId).single()
+      .then(({ data }) => { if (data?.started_at) setSessionStartedAt(data.started_at); });
+  }, [sessionId]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -119,6 +126,7 @@ export default function LiveDashboard() {
           <LiveList
             queue={queue}
             currentSongId={currentSongId}
+            sessionStartedAt={sessionStartedAt}
             onPlay={handlePlay}
             onStop={handleStop}
             onViewSong={handleViewSong}
@@ -136,6 +144,7 @@ export default function LiveDashboard() {
               <LiveList
                 queue={queue}
                 currentSongId={currentSongId}
+                sessionStartedAt={sessionStartedAt}
                 onPlay={handlePlay}
                 onStop={handleStop}
                 onViewSong={handleViewSongAndCollapse}
