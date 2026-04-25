@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DeleteConfirmModal from "./DeleteConfirmModal";
 import { verifyLyric, deleteLyric, type Lyric } from "./lyric-panel/lyricService";
 import LyricHtmlPanel, { DEFAULT_STYLE, type LyricHtmlStyle } from "./LyricHtmlPanel";
+import { fetchDefaultStyle } from "./LyricHtmlStyleBar";
 import vi from "../../lib/vi";
 
 export type { Lyric };
@@ -29,6 +30,10 @@ export default function LyricPanel({
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [htmlStyle, setHtmlStyle] = useState<LyricHtmlStyle>(DEFAULT_STYLE);
   const [htmlPresenting, setHtmlPresenting] = useState(false);
+
+  useEffect(() => {
+    fetchDefaultStyle().then(setHtmlStyle);
+  }, []);
 
   const handleVerify = async (lyric: Lyric) => {
     if (!songId) return;

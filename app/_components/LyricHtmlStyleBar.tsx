@@ -1,5 +1,7 @@
 "use client";
 
+import { fetchSetting } from "../_lib/settings_service";
+
 const FONT_OPTIONS = ["Arial", "Georgia", "Times New Roman", "Courier New", "Verdana", "Tahoma"];
 
 type Theme = { label: string; bg: string; c1: string; c2: string };
@@ -27,6 +29,18 @@ export const DEFAULT_STYLE: LyricHtmlStyle = {
   singlePage: true,
   splitColumns: true,
 };
+
+export async function fetchDefaultStyle(): Promise<LyricHtmlStyle> {
+  const [fs, op] = await Promise.all([
+    fetchSetting("song_font_size"),
+    fetchSetting("song_one_page"),
+  ]);
+  return {
+    ...DEFAULT_STYLE,
+    fontSize: fs ? (parseInt(fs, 10) || DEFAULT_STYLE.fontSize) : DEFAULT_STYLE.fontSize,
+    singlePage: op !== null ? op === "true" : DEFAULT_STYLE.singlePage,
+  };
+}
 
 type Props = {
   style: LyricHtmlStyle;
