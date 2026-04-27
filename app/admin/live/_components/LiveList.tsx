@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fmtTime, fmtDateTime } from "../../../../lib/format";
+import EditRegistrationModal, { type EditableRegistration } from "../../../_components/EditRegistrationModal";
 
 type NoteDialogState = {
   isOpen: boolean;
@@ -39,6 +40,7 @@ function getHtmlLyricId(item: any): string | null {
 export default function LiveList({ queue, currentSongId, sessionStartedAt, onPlay, onStop, onViewSong, onOpenNote, onPresent, onPresentHtml, onRefresh }: Props) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [spinning, setSpinning] = useState(false);
+  const [editingItem, setEditingItem] = useState<EditableRegistration | null>(null);
   const router = useRouter();
 
   const handleRefresh = () => {
@@ -93,10 +95,19 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, onPla
               >
                 <div className="flex items-center gap-2">
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-gray-900 dark:text-white truncate">{index + 1}. {item.songs?.title}</div>
+                    <div className="font-bold text-gray-900 dark:text-white truncate">
+                      {index + 1}. {item.songs?.title}
+                      {item.songs?.author && <span className="ml-1.5 text-xs font-normal text-gray-400 dark:text-gray-500">{item.songs.author}</span>}
+                    </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                       {item.singer_name}
-                      {item.booker_phone && <span className="ml-2 font-mono">{item.booker_phone}</span>}
+                      {item.booker_phone && (
+                        <a
+                          href={`tel:${item.booker_phone}`}
+                          onClick={e => e.stopPropagation()}
+                          className="ml-2 font-mono hover:text-blue-400 underline underline-offset-2"
+                        >{item.booker_phone}</a>
+                      )}
                       {item.drinks?.length > 0 && (
                         <span className="ml-2 text-blue-400">
                           🥤 {item.drinks.map((d: string) => DRINK_LABELS[d] ?? d).join(", ")}
@@ -161,6 +172,22 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, onPla
                     📝 Ghi chú
                   </button>
                   <button
+                    onClick={() => {
+                      setEditingItem({
+                        registration_id: item.id,
+                        session_id: item.session_id,
+                        song_id: item.songs?.id,
+                        song_title: item.songs?.title ?? item.free_text_song_name ?? "",
+                        song_author: item.songs?.author,
+                        drinks: item.drinks ?? [],
+                      });
+                      setOpenMenuId(null);
+                    }}
+                    className="flex-1 py-2 rounded-lg text-sm font-medium bg-yellow-100 dark:bg-yellow-700/50 hover:bg-yellow-200 dark:hover:bg-yellow-700 text-yellow-800 dark:text-white transition-colors"
+                  >
+                    🔄 Đổi bài
+                  </button>
+                  <button
                     onClick={() => { router.push(`/admin/songs/${item.songs.id}`); setOpenMenuId(null); }}
                     className="flex-1 py-2 rounded-lg text-sm font-medium bg-purple-100 dark:bg-purple-800 hover:bg-purple-200 dark:hover:bg-purple-700 text-purple-800 dark:text-white transition-colors"
                   >
@@ -173,6 +200,13 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, onPla
         })}
         {queue.length === 0 && <p className="text-gray-400 italic text-center py-4">Chưa có ai đăng ký</p>}
       </div>
+      {editingItem && (
+        <EditRegistrationModal
+          item={editingItem}
+          onClose={() => setEditingItem(null)}
+          onSaved={() => { setEditingItem(null); onRefresh?.(); }}
+        />
+      )}
     </div>
   );
 }

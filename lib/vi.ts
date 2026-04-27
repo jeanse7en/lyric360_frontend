@@ -8,7 +8,7 @@ const vi = {
   sheetPanel: {
     title: 'Sheet Nhạc',
     addBtn: '+',
-    fullscreenBtn: '⛶',
+    fullscreenBtn: 'Phóng to',
     noSong: 'Chưa chọn bài hát',
     selectHint: 'Chọn sheet bên trên',
     addModalTitle: 'Thêm sheet nhạc',

@@ -5,10 +5,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Header from "../../_components/Header";
 import Footer from "../../_components/Footer";
 import { styleToParams, DEFAULT_STYLE } from "../../_components/LyricHtmlPanel";
-import SessionSelector from "../../_components/SessionSelector";
-import SongSearch from "../../_components/SongSearch";
-import DrinkSelector from "../../_components/DrinkSelector";
 import DeleteButton from "../../_components/DeleteButton";
+import EditRegistrationModal from "../../_components/EditRegistrationModal";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -25,14 +23,7 @@ type QueueItem = {
   session_id: string;
   drinks: string[];
   video_url?: string | null;
-};
-
-type Song = { id: string; title: string; author?: string };
-
-type Session = {
-  id: string;
-  session_date: string;
-  status: "planned" | "live" | "ended";
+  order_number?: number | null;
 };
 
 type UserSuggestion = { id: string; name: string; phone_zalo?: string };
@@ -42,135 +33,6 @@ const STATUS_LABELS: Record<string, string> = {
   performing: "Đang hát",
   done: "Đã hát",
 };
-
-// ── Edit Modal ─────────────────────────────────────────────────────────────────
-
-type EditModalProps = {
-  item: QueueItem;
-  onClose: () => void;
-  onSaved: () => void;
-};
-
-function EditModal({ item, onClose, onSaved }: EditModalProps) {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [selectedSessionId, setSelectedSessionId] = useState(item.session_id);
-  const [selectedSong, setSelectedSong] = useState<Song | null>(
-    item.song_id ? { id: item.song_id, title: item.song_title, author: item.song_author } : null
-  );
-  const [freeTextSong, setFreeTextSong] = useState(item.song_id ? "" : item.song_title);
-  const [drinks, setDrinks] = useState<string[]>(item.drinks ?? []);
-  const [saving, setSaving] = useState(false);
-  const [modalError, setModalError] = useState("");
-
-  // Fetch available sessions (non-ended, plus the current one)
-  useEffect(() => {
-    fetch(`${API}/api/sessions`)
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then((data: Session[]) => {
-        const visible = data.filter(
-          s => s.status !== "ended" || s.id === item.session_id
-        );
-        if (!visible.find(s => s.id === item.session_id)) {
-          const current = data.find(s => s.id === item.session_id);
-          if (current) visible.unshift(current);
-        }
-        setSessions(visible);
-      })
-      .catch(() => setModalError("Không thể tải danh sách đêm diễn"));
-  }, [item.session_id]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setModalError("");
-    try {
-      const body: Record<string, unknown> = { drinks };
-      if (selectedSessionId !== item.session_id) {
-        body.session_id = selectedSessionId;
-      }
-      if (selectedSong) {
-        body.song_id = selectedSong.id;
-      } else if (freeTextSong.trim()) {
-        body.free_text_song_name = freeTextSong.trim();
-      }
-
-      const res = await fetch(`${API}/api/queue/registrations/${item.registration_id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.detail ?? "Lỗi không xác định");
-      }
-      onSaved();
-    } catch (err: unknown) {
-      setModalError(err instanceof Error ? err.message : "Lỗi không xác định");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl p-6 overflow-y-auto max-h-[90vh]">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Chỉnh sửa đăng ký</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none"
-          >
-            ✕
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <SessionSelector
-            sessions={sessions}
-            selectedId={selectedSessionId}
-            onChange={setSelectedSessionId}
-          />
-
-          <SongSearch
-            selectedSong={selectedSong}
-            onSelect={setSelectedSong}
-            onInputChange={setFreeTextSong}
-            bookedSongIds={[]}
-            recentSongs={[]}
-          />
-
-          <DrinkSelector selected={drinks} onChange={setDrinks} />
-
-          {modalError && (
-            <p className="text-sm text-red-500 dark:text-red-400">{modalError}</p>
-          )}
-
-          <div className="flex gap-3 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              Huỷ
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium transition-colors"
-            >
-              {saving ? "Đang lưu..." : "Lưu thay đổi"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
 
 // ── Main content ───────────────────────────────────────────────────────────────
 
@@ -331,6 +193,9 @@ function UserLyricContent() {
                     onClick={() => item.lyric_id && window.open(`/live/lyric?lyric_id=${item.lyric_id}&${styleToParams(DEFAULT_STYLE)}`, "_blank")}
                     className={`flex-1 min-w-0 ${item.lyric_id ? "cursor-pointer hover:opacity-80 transition-opacity" : "opacity-60"}`}
                   >
+                    {item.order_number != null && (
+                      <p className="text-xs text-gray-400 mb-0.5">Số thứ tự: <span className="font-semibold tabular-nums text-gray-600 dark:text-gray-300">{item.order_number}</span></p>
+                    )}
                     <p className="font-semibold text-gray-900 dark:text-white">{item.song_title}</p>
                     {item.song_author && <p className="text-xs text-gray-400 mt-0.5">{item.song_author}</p>}
                     <p className="text-xs text-gray-400 mt-1">{item.session_date}</p>
@@ -344,7 +209,13 @@ function UserLyricContent() {
                       {STATUS_LABELS[item.status] ?? item.status}
                     </span>
                     {item.lyric_id && (
-                      <span className="text-xs text-blue-500">Xem lời →</span>
+                      <button
+                        type="button"
+                        onClick={e => { e.stopPropagation(); window.open(`/live/lyric?lyric_id=${item.lyric_id}&${styleToParams(DEFAULT_STYLE)}`, "_blank"); }}
+                        className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors"
+                      >
+                        Xem lời →
+                      </button>
                     )}
                     {item.video_url && (
                       <a
@@ -352,7 +223,7 @@ function UserLyricContent() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={e => e.stopPropagation()}
-                        className="text-xs text-green-500 hover:text-green-400 underline"
+                        className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors"
                       >
                         🎬 Xem video ↗
                       </a>
@@ -362,16 +233,16 @@ function UserLyricContent() {
                         <button
                           type="button"
                           onClick={e => { e.stopPropagation(); setEditingItem(item); }}
-                          className="text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                          className="text-xs px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors"
                           title="Chỉnh sửa đăng ký"
                         >
-                          ✏️
+                          Chỉnh sửa
                         </button>
                         <span onClick={e => e.stopPropagation()}>
                           <DeleteButton
                             title="Xoá đăng ký?"
                             onDelete={() => handleDelete(item.registration_id)}
-                            className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                            className="text-xs px-2 py-1 rounded bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
                           />
                         </span>
                       </div>
@@ -385,7 +256,7 @@ function UserLyricContent() {
       </div>
 
       {editingItem && (
-        <EditModal
+        <EditRegistrationModal
           item={editingItem}
           onClose={() => setEditingItem(null)}
           onSaved={() => {

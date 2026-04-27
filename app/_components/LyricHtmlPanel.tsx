@@ -232,7 +232,7 @@ export default function LyricHtmlPanel({
                       onClick={() => setShowAdd(true)}
                       className="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-xs text-white transition-colors"
                   >
-                    +
+                    Thêm
                   </button>
               )}
               {activeLyricId && (
@@ -242,7 +242,7 @@ export default function LyricHtmlPanel({
                   rel="noopener noreferrer"
                   className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs text-white transition-colors"
                 >
-                  ⛶
+                  Phóng to
                 </a>
               )}
             </div>
@@ -258,7 +258,7 @@ export default function LyricHtmlPanel({
                     key={lyric.id}
                     onClick={() => { setSelectedIdx(i); setEditing(false); }}
                     className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                      selectedIdx === i ? "bg-pink-500 text-white" : "bg-gray-700 hover:bg-gray-600 text-white"
+                      selectedIdx === i ? "bg-blue-600 text-white" : "bg-gray-700 hover:bg-gray-600 text-white"
                     }`}
                   >
                     {i + 1}
@@ -276,11 +276,11 @@ export default function LyricHtmlPanel({
                     <button
                       onClick={handlePresentToTV}
                       className={`text-xs px-2 py-1 rounded font-medium transition-colors flex items-center gap-1 ${
-                        isSelected ? "bg-green-700 hover:bg-green-600 text-white" : "bg-gray-700 hover:bg-gray-600 text-white"
+                        isSelected ? "bg-blue-700 hover:bg-blue-600 text-white" : "bg-blue-600 hover:bg-blue-500 text-white"
                       }`}
                       title="Chiếu lên màn hình TV"
                     >
-                      📺{isSelected && <span className="text-green-300">✓</span>}
+                      Chiếu{isSelected && <span className="text-green-300">✓</span>}
                     </button>
                   )}
 

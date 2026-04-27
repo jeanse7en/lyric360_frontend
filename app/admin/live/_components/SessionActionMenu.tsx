@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ConfirmModal from "../../../_components/ConfirmModal";
 
 type Session = {
   id: string;
@@ -25,6 +26,8 @@ type Props = {
 export default function SessionActionMenu({ session, onStart, onStop, onDelete, onEdit }: Props) {
   const router = useRouter();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [startConfirm, setStartConfirm] = useState(false);
+  const [stopConfirm, setStopConfirm] = useState(false);
 
   return (
     <div className="mt-3 pt-3 border-t border-gray-700 space-y-2">
@@ -42,7 +45,7 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
       <div className="flex flex-wrap gap-2">
         {session.status === "planned" && (
           <button
-            onClick={() => onStart(session.id)}
+            onClick={() => setStartConfirm(true)}
             className="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600 hover:bg-green-500 text-white transition-colors"
           >
             ▶ Bắt đầu
@@ -50,7 +53,7 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
         )}
         {session.status === "live" && (
           <button
-            onClick={() => onStop(session.id)}
+            onClick={() => setStopConfirm(true)}
             className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 hover:bg-red-500 text-white transition-colors"
           >
             ⏹ Kết thúc
@@ -92,18 +95,35 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
         </button>
       </div>
 
-      {/* Delete confirm */}
+      {startConfirm && (
+        <ConfirmModal
+          title="Bắt đầu buổi diễn?"
+          message={<>Buổi diễn <span className="font-semibold">{session.name || session.session_date}</span> sẽ chuyển sang trạng thái <span className="text-green-600 font-semibold">Live</span>. Các buổi đang live khác sẽ bị dừng lại.</>}
+          confirmLabel="▶ Bắt đầu"
+          confirmClassName="px-4 py-2 rounded-lg text-sm bg-green-600 hover:bg-green-500 text-white transition-colors"
+          onConfirm={() => { onStart(session.id); setStartConfirm(false); }}
+          onCancel={() => setStartConfirm(false)}
+        />
+      )}
+      {stopConfirm && (
+        <ConfirmModal
+          title="Kết thúc buổi diễn?"
+          message={<>Buổi diễn <span className="font-semibold">{session.name || session.session_date}</span> sẽ kết thúc. Hàng đợi sẽ bị đóng lại.</>}
+          confirmLabel="⏹ Kết thúc"
+          confirmClassName="px-4 py-2 rounded-lg text-sm bg-red-600 hover:bg-red-500 text-white transition-colors"
+          onConfirm={() => { onStop(session.id); setStopConfirm(false); }}
+          onCancel={() => setStopConfirm(false)}
+        />
+      )}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 text-gray-900">
-            <h2 className="text-lg font-bold mb-2">Xác nhận xóa</h2>
-            <p className="text-sm text-gray-600 mb-5">Buổi diễn này sẽ bị xóa vĩnh viễn cùng toàn bộ hàng đợi.</p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeleteConfirm(false)} className="px-4 py-2 rounded-lg text-sm bg-gray-100 hover:bg-gray-200 transition-colors">Hủy</button>
-              <button onClick={() => { onDelete(session.id); setDeleteConfirm(false); }} className="px-4 py-2 rounded-lg text-sm bg-red-600 hover:bg-red-500 text-white transition-colors">Xóa</button>
-            </div>
-          </div>
-        </div>
+        <ConfirmModal
+          title="Xác nhận xóa"
+          message="Buổi diễn này sẽ bị xóa vĩnh viễn cùng toàn bộ hàng đợi."
+          confirmLabel="Xóa"
+          confirmClassName="px-4 py-2 rounded-lg text-sm bg-red-600 hover:bg-red-500 text-white transition-colors"
+          onConfirm={() => { onDelete(session.id); setDeleteConfirm(false); }}
+          onCancel={() => setDeleteConfirm(false)}
+        />
       )}
     </div>
   );
