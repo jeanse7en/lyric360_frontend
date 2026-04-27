@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 
-const SCOPE = "https://www.googleapis.com/auth/drive.file";
+const SCOPE = "https://www.googleapis.com/auth/drive";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type GisWindow = Window & { google?: any };
@@ -107,6 +107,64 @@ export function useDriveUpload() {
     };
   }, [getToken]);
 
+  const uploadFileResumable = useCallback(async (
+    file: File,
+    filename: string,
+    folderId: string,
+    onProgress: (pct: number) => void,
+  ): Promise<{ id: string; webViewLink: string }> => {
+    const token = await getToken();
+
+    // Step 1: Initiate resumable session
+    const initRes = await fetch(
+      "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,webViewLink&supportsAllDrives=true",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "X-Upload-Content-Type": file.type || "video/mp4",
+          "X-Upload-Content-Length": String(file.size),
+        },
+        body: JSON.stringify({ name: filename, parents: [folderId] }),
+      }
+    );
+    if (!initRes.ok) {
+      if (initRes.status === 401 || initRes.status === 404) {
+        tokenRef.current = null;
+        clientRef.current = null;
+        setAuthorized(false);
+      }
+      throw new Error(`Không thể tạo phiên upload: ${initRes.status}`);
+    }
+    const sessionUri = initRes.headers.get("Location");
+    if (!sessionUri) throw new Error("Không nhận được session URI");
+
+    // Step 2: Upload directly browser → Drive via XHR (progress events)
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", sessionUri);
+      xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+      xhr.onload = () => {
+        if (xhr.status === 200 || xhr.status === 201) {
+          const data = JSON.parse(xhr.responseText);
+          resolve({
+            id: data.id as string,
+            webViewLink: (data.webViewLink as string) ?? `https://drive.google.com/file/d/${data.id}/view`,
+          });
+        } else {
+          if (xhr.status === 401) tokenRef.current = null;
+          reject(new Error(`Upload thất bại: ${xhr.status}`));
+        }
+      };
+      xhr.onerror = () => reject(new Error("Lỗi kết nối khi upload"));
+      xhr.send(file);
+    });
+  }, [getToken]);
+
   const deleteFile = useCallback(async (fileId: string): Promise<void> => {
     try {
       const token = await getToken();
@@ -119,5 +177,5 @@ export function useDriveUpload() {
     }
   }, [getToken]);
 
-  return { authorized, getToken, createFolder, uploadFile, deleteFile };
+  return { authorized, getToken, createFolder, uploadFile, uploadFileResumable, deleteFile };
 }
