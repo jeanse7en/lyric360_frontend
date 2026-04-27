@@ -29,6 +29,7 @@ export type Segment = {
   registration_id: string;
   song_title: string;
   singer_name: string;
+  booker_phone?: string | null;
   actual_start_iso: string;
   actual_end_iso: string;
   video_url?: string | null;

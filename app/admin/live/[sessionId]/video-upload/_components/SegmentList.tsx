@@ -42,6 +42,13 @@ export default function SegmentList({ loading, segments, uploads, selectedIndex,
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-white font-medium truncate">{seg.song_title}</p>
                   <p className="text-xs text-gray-400 truncate">{seg.singer_name}</p>
+                  {seg.booker_phone && (
+                    <a
+                      href={`tel:${seg.booker_phone}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-xs text-blue-400 hover:text-blue-300 truncate"
+                    >{seg.booker_phone}</a>
+                  )}
                   <p className="text-xs text-gray-500">{fmtDuration(seg.actual_start_iso, seg.actual_end_iso)}</p>
                   {up.file && up.status !== "done" && (
                     <p className="text-xs text-blue-400 truncate mt-0.5" title={up.file.name}>{up.file.name}</p>
