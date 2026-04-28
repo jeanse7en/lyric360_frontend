@@ -1,22 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 import Header from "../../_components/Header";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const API = process.env.NEXT_PUBLIC_API_URL;
+
+type Song = { id: string; title: string; author?: string | null };
 
 type QueueRow = {
   id: string;
   singer_name: string;
-  booker_phone?: string;
+  booker_phone?: string | null;
   status: string;
   created_at: string;
-  songs?: { id: string; title: string; author?: string } | null;
-  free_text_song_name?: string;
+  free_text_song_name?: string | null;
+  songs?: Song | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -31,49 +29,34 @@ export default function SchedulePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Find today's session (live first, else planned, pick first by date)
+  // Find today's session from backend
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    supabase
-      .from("live_sessions")
-      .select("id, status, session_date")
-      .eq("session_date", today)
-      .order("status", { ascending: true }) // "live" < "planned" alphabetically — fine
-      .limit(2)
-      .then(({ data, error: err }) => {
-        if (err || !data?.length) {
+    fetch(`${API}/api/sessions/today`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) {
           setError("Không có buổi diễn nào hôm nay.");
           setLoading(false);
           return;
         }
-        // Prefer live session, else first one
-        const live = data.find(s => s.status === "live") ?? data[0];
-        setSessionId(live.id);
-      });
+        setSessionId(data.id);
+      })
+      .catch(() => { setError("Không thể tải dữ liệu."); setLoading(false); });
   }, []);
 
-  // Fetch queue once session is known, then subscribe to realtime updates
+  // Fetch queue and poll every 15 seconds
   useEffect(() => {
     if (!sessionId) return;
 
-    const fetchQueue = async () => {
-      const { data } = await supabase
-        .from("queue_registrations")
-        .select("id, singer_name, booker_phone, status, created_at, free_text_song_name, songs ( id, title, author )")
-        .eq("session_id", sessionId)
-        .order("created_at", { ascending: true });
-      setQueue((data as QueueRow[]) || []);
-      setLoading(false);
-    };
+    const fetchQueue = () =>
+      fetch(`${API}/api/sessions/${sessionId}/queue`)
+        .then(r => r.ok ? r.json() : [])
+        .then((data: QueueRow[]) => { setQueue(data); setLoading(false); })
+        .catch(() => setLoading(false));
 
     fetchQueue();
-
-    const channel = supabase
-      .channel(`user_list_${sessionId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "queue_registrations", filter: `session_id=eq.${sessionId}` }, fetchQueue)
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    const interval = setInterval(fetchQueue, 15000);
+    return () => clearInterval(interval);
   }, [sessionId]);
 
   return (
@@ -82,12 +65,8 @@ export default function SchedulePage() {
       <main className="w-full px-2 sm:px-4 py-6">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-4 px-2">🎵 Lịch diễn hôm nay</h1>
 
-        {loading && (
-          <p className="text-center text-gray-400 py-16">Đang tải...</p>
-        )}
-        {error && (
-          <p className="text-center text-gray-400 py-16">{error}</p>
-        )}
+        {loading && <p className="text-center text-gray-400 py-16">Đang tải...</p>}
+        {error && <p className="text-center text-gray-400 py-16">{error}</p>}
 
         {!loading && !error && (
           <div className="w-full overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
@@ -128,7 +107,6 @@ export default function SchedulePage() {
                       <td className="px-3 py-3 text-center text-gray-400 tabular-nums text-xs">{i + 1}</td>
                       <td className="px-3 py-3 font-medium text-gray-900 dark:text-white">
                         {songTitle}
-                        {/* Show author inline on mobile where the column is hidden */}
                         {songAuthor && (
                           <span className="sm:hidden block text-xs text-gray-400 font-normal">{songAuthor}</span>
                         )}
