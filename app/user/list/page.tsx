@@ -78,7 +78,7 @@ export default function SchedulePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header />
+      <Header hideNav />
       <main className="w-full px-2 sm:px-4 py-6">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-4 px-2">🎵 Lịch diễn hôm nay</h1>
 

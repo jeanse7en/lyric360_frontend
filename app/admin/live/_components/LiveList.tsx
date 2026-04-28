@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fmtTime, fmtDateTime } from "../../../../lib/format";
 import EditRegistrationModal, { type EditableRegistration } from "../../../_components/EditRegistrationModal";
+import ConfirmModal from "../../../_components/ConfirmModal";
+
+const API = process.env.NEXT_PUBLIC_API_URL;
 
 type NoteDialogState = {
   isOpen: boolean;
@@ -42,7 +45,14 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, onPla
   const [spinning, setSpinning] = useState(false);
   const [editingItem, setEditingItem] = useState<EditableRegistration | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const router = useRouter();
+
+  const handleDelete = async (id: string) => {
+    await fetch(`${API}/api/queue/registrations/${id}`, { method: "DELETE" });
+    setDeletingId(null);
+    onRefresh?.();
+  };
 
   const handleCopyFB = (item: any) => {
     const text = `🎵 Bài hát: ${item.songs?.title ?? item.free_text_song_name ?? ""}
@@ -179,13 +189,10 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, onPla
                     Xem trước
                   </button>
                   <button
-                    onClick={() => {
-                      onOpenNote({ isOpen: true, queueId: item.id, tone: item.actual_tone || '', note: item.note || '', rating: item.rating || 5 });
-                      setOpenMenuId(null);
-                    }}
-                    className="flex-1 py-2 rounded-lg text-sm font-medium bg-blue-100 dark:bg-blue-700 hover:bg-blue-200 dark:hover:bg-blue-600 text-blue-800 dark:text-white transition-colors"
+                    onClick={() => { setDeletingId(item.id); setOpenMenuId(null); }}
+                    className="flex-1 py-2 rounded-lg text-sm font-medium bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 text-red-700 dark:text-red-400 transition-colors"
                   >
-                    Ghi chú
+                    Xoá
                   </button>
                   <button
                     onClick={() => {
@@ -227,6 +234,16 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, onPla
           item={editingItem}
           onClose={() => setEditingItem(null)}
           onSaved={() => { setEditingItem(null); onRefresh?.(); }}
+        />
+      )}
+      {deletingId && (
+        <ConfirmModal
+          title="Xoá khỏi hàng đợi?"
+          message="Đăng ký này sẽ bị xoá vĩnh viễn khỏi hàng đợi."
+          confirmLabel="Xoá"
+          confirmClassName="px-4 py-2 rounded-lg text-sm bg-red-600 hover:bg-red-500 text-white transition-colors"
+          onConfirm={() => handleDelete(deletingId)}
+          onCancel={() => setDeletingId(null)}
         />
       )}
     </div>
