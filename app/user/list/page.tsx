@@ -62,7 +62,7 @@ export default function SchedulePage() {
         .select("id, singer_name, booker_phone, status, created_at, free_text_song_name, songs ( id, title, author )")
         .eq("session_id", sessionId)
         .order("created_at", { ascending: true });
-      setQueue((data as unknown as QueueRow[]) || []);
+      setQueue((data as QueueRow[]) || []);
       setLoading(false);
     };
 
