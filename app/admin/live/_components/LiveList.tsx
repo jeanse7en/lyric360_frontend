@@ -48,7 +48,7 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, onPla
     const text = `🎵 Bài hát: ${item.songs?.title ?? item.free_text_song_name ?? ""}
 ✍️ Tác giả: ${item.songs?.author ?? ""}
 🎤 Khách hát: ${item.singer_name}
-🎸 Đệm đàn: @Đàm Hà
+🎸 Đệm đàn: Hà Đàm
 
 🎶 Cafe ĐÀM HÀ
 📍 Địa chỉ: 45 Huỳnh Thúc Kháng
