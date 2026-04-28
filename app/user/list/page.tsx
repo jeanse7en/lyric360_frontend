@@ -15,7 +15,7 @@ type QueueRow = {
   booker_phone?: string;
   status: string;
   created_at: string;
-  songs?: { id: string; title: string; author?: string }[] | null;
+  songs?: { id: string; title: string; author?: string } | null;
   free_text_song_name?: string;
 };
 
@@ -111,9 +111,8 @@ export default function SchedulePage() {
                 {queue.map((item, i) => {
                   const isDone = item.status === "done";
                   const isPlaying = item.status === "playing";
-                  const song = item.songs?.[0];
-                  const songTitle = song?.title ?? item.free_text_song_name ?? "—";
-                  const songAuthor = song?.author ?? "";
+                  const songTitle = item.songs?.title ?? item.free_text_song_name ?? "—";
+                  const songAuthor = item.songs?.author ?? "";
 
                   return (
                     <tr
