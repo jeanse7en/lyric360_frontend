@@ -45,10 +45,10 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, onPla
   const router = useRouter();
 
   const handleCopyFB = (item: any) => {
-    const text = `🎤 Khách hát: ${item.singer_name}
-🎸 Đệm đàn: @Đàm Hà
-🎵 Bài hát: ${item.songs?.title ?? item.free_text_song_name ?? ""}
+    const text = `🎵 Bài hát: ${item.songs?.title ?? item.free_text_song_name ?? ""}
 ✍️ Tác giả: ${item.songs?.author ?? ""}
+🎤 Khách hát: ${item.singer_name}
+🎸 Đệm đàn: @Đàm Hà
 
 🎶 Cafe ĐÀM HÀ
 📍 Địa chỉ: 45 Huỳnh Thúc Kháng
