@@ -68,6 +68,18 @@ export default function Header({ hideNav }: { hideNav?: boolean }) {
           })}
           {hideNav && mounted && (
             <Link
+              href="/user/list"
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                pathname.startsWith("/user/list")
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-400 hover:text-white hover:bg-gray-800"
+              }`}
+            >
+              Lịch diễn
+            </Link>
+          )}
+          {hideNav && mounted && (
+            <Link
               href="/user/history"
               className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 pathname.startsWith("/user/history")
