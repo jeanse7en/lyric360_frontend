@@ -28,6 +28,23 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [startConfirm, setStartConfirm] = useState(false);
   const [stopConfirm, setStopConfirm] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const FB_TEMPLATE = `🎤 Khách hát: [Tên khách]
+🎸 Đệm đàn: @Đàm Hà
+🎵 Bài hát: [Tên bài hát]
+✍️ Tác giả: [Tên tác giả]
+
+🎶 Cafe ĐÀM HÀ
+📍 Địa chỉ: 45 Huỳnh Thúc Kháng
+📝 Đăng ký bài hát: https://lyric360.vn (Mở vào 8h sáng)`;
+
+  const handleCopyFB = () => {
+    navigator.clipboard.writeText(FB_TEMPLATE).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   return (
     <div className="mt-3 pt-3 border-t border-gray-700 space-y-2">
@@ -48,7 +65,7 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
             onClick={() => setStartConfirm(true)}
             className="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600 hover:bg-green-500 text-white transition-colors"
           >
-            ▶ Bắt đầu
+            Bắt đầu
           </button>
         )}
         {session.status === "live" && (
@@ -56,14 +73,14 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
             onClick={() => setStopConfirm(true)}
             className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 hover:bg-red-500 text-white transition-colors"
           >
-            ⏹ Kết thúc
+            Kết thúc
           </button>
         )}
         <button
             onClick={() => router.push(`/admin/live/${session.id}`)}
             className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
         >
-          🎵 Xem
+          Xem
         </button>
         {session.status === "ended" && (
           <>
@@ -71,13 +88,13 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
               onClick={() => router.push(`/admin/live/${session.id}/video-cut`)}
               className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors"
             >
-              ✂ Cắt video
+              Cắt video
             </button>
             <button
               onClick={() => router.push(`/admin/live/${session.id}/video-upload`)}
               className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors"
             >
-              📤 Upload video
+              Upload video
             </button>
           </>
         )}
@@ -85,13 +102,19 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
           onClick={() => onEdit(session)}
           className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-white transition-colors"
         >
-          ✏️ Chỉnh sửa
+          Chỉnh sửa
+        </button>
+        <button
+          onClick={handleCopyFB}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-900 hover:bg-blue-800 text-blue-300 transition-colors"
+        >
+          {copied ? "✓ Đã copy!" : "📋 Copy FB"}
         </button>
         <button
           onClick={() => setDeleteConfirm(true)}
           className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-red-700 text-red-400 hover:text-white transition-colors"
         >
-          🗑 Xóa
+          Xóa
         </button>
       </div>
 
