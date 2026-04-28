@@ -28,24 +28,6 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [startConfirm, setStartConfirm] = useState(false);
   const [stopConfirm, setStopConfirm] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const FB_TEMPLATE = `🎤 Khách hát: [Tên khách]
-🎸 Đệm đàn: @Đàm Hà
-🎵 Bài hát: [Tên bài hát]
-✍️ Tác giả: [Tên tác giả]
-
-🎶 Cafe ĐÀM HÀ
-📍 Địa chỉ: 45 Huỳnh Thúc Kháng
-📝 Đăng ký bài hát: https://lyric360.vn (Mở vào 8h sáng)`;
-
-  const handleCopyFB = () => {
-    navigator.clipboard.writeText(FB_TEMPLATE).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
   return (
     <div className="mt-3 pt-3 border-t border-gray-700 space-y-2">
       {/* Stats row */}
@@ -103,12 +85,6 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
           className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-white transition-colors"
         >
           Chỉnh sửa
-        </button>
-        <button
-          onClick={handleCopyFB}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-900 hover:bg-blue-800 text-blue-300 transition-colors"
-        >
-          {copied ? "✓ Đã copy!" : "📋 Copy FB"}
         </button>
         <button
           onClick={() => setDeleteConfirm(true)}

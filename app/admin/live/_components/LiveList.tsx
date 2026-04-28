@@ -41,7 +41,23 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, onPla
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [editingItem, setEditingItem] = useState<EditableRegistration | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const router = useRouter();
+
+  const handleCopyFB = (item: any) => {
+    const text = `🎤 Khách hát: ${item.singer_name}
+🎸 Đệm đàn: @Đàm Hà
+🎵 Bài hát: ${item.songs?.title ?? item.free_text_song_name ?? ""}
+✍️ Tác giả: ${item.songs?.author ?? ""}
+
+🎶 Cafe ĐÀM HÀ
+📍 Địa chỉ: 45 Huỳnh Thúc Kháng
+📝 Đăng ký bài hát: https://lyric360.vn (Mở vào 8h sáng)`;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedId(item.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
 
   const handleRefresh = () => {
     if (!onRefresh || spinning) return;
@@ -145,7 +161,7 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, onPla
                       }}
                       className="flex-1 py-2 rounded-lg text-sm font-semibold bg-green-600 hover:bg-green-500 text-white transition-colors"
                     >
-                      ▶ Diễn
+                      Diễn
                     </button>
                   )}
                   {item.status === "playing" && (
@@ -153,14 +169,14 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, onPla
                       onClick={() => { onStop(item.id); setOpenMenuId(null); }}
                       className="flex-1 py-2 rounded-lg text-sm font-semibold bg-red-600 hover:bg-red-500 text-white transition-colors"
                     >
-                      🛑 Dừng
+                      Dừng
                     </button>
                   )}
                   <button
                     onClick={() => { onViewSong(item.songs.id); setOpenMenuId(null); }}
                     className="flex-1 py-2 rounded-lg text-sm font-medium bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-white transition-colors"
                   >
-                    👀 Xem trước
+                    Xem trước
                   </button>
                   <button
                     onClick={() => {
@@ -169,7 +185,7 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, onPla
                     }}
                     className="flex-1 py-2 rounded-lg text-sm font-medium bg-blue-100 dark:bg-blue-700 hover:bg-blue-200 dark:hover:bg-blue-600 text-blue-800 dark:text-white transition-colors"
                   >
-                    📝 Ghi chú
+                    Ghi chú
                   </button>
                   <button
                     onClick={() => {
@@ -185,13 +201,19 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, onPla
                     }}
                     className="flex-1 py-2 rounded-lg text-sm font-medium bg-yellow-100 dark:bg-yellow-700/50 hover:bg-yellow-200 dark:hover:bg-yellow-700 text-yellow-800 dark:text-white transition-colors"
                   >
-                    🔄 Đổi bài
+                    Đổi bài
                   </button>
                   <button
                     onClick={() => { router.push(`/admin/songs/${item.songs.id}`); setOpenMenuId(null); }}
                     className="flex-1 py-2 rounded-lg text-sm font-medium bg-purple-100 dark:bg-purple-800 hover:bg-purple-200 dark:hover:bg-purple-700 text-purple-800 dark:text-white transition-colors"
                   >
-                    ✏️ Sửa bài
+                    Sửa bài
+                  </button>
+                  <button
+                    onClick={() => handleCopyFB(item)}
+                    className="flex-1 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                  >
+                    {copiedId === item.id ? "✓ Đã copy!" : "📋 Copy FB"}
                   </button>
                 </div>
               )}
