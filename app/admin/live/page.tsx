@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import Header from "../../_components/Header";
 import Footer from "../../_components/Footer";
 import SessionActionMenu from "./_components/SessionActionMenu";
+import QRModal from "./_components/QRModal";
 
 type Session = {
   id: string;
   name?: string;
   session_date: string;
   status: string;
+  is_private: boolean;
   started_at?: string;
   ended_at?: string;
   order_count: number;
@@ -41,7 +43,7 @@ const STATUS_LABEL: Record<string, string> = {
   ended: "✓ Đã kết thúc",
 };
 
-type EditState = { id: string; name: string; date: string } | null;
+type EditState = { id: string; name: string; date: string; is_private: boolean } | null;
 
 export default function SessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -56,6 +58,8 @@ export default function SessionsPage() {
   const [filterName, setFilterName] = useState("");
   const [dateFrom, setDateFrom] = useState(today());
   const [dateTo, setDateTo] = useState(today());
+  const [addIsPrivate, setAddIsPrivate] = useState(false);
+  const [qrSession, setQrSession] = useState<Session | null>(null);
 
   const fetchSessions = async () => {
     setLoading(true);
@@ -78,12 +82,13 @@ export default function SessionsPage() {
     const res = await fetch(`${API}/api/sessions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: addName || null, session_date: addDate }),
+      body: JSON.stringify({ name: addName || null, session_date: addDate, is_private: addIsPrivate }),
     });
     if (!res.ok) { setError("Không thể tạo buổi diễn"); return; }
     setShowAdd(false);
     setAddName("");
     setAddDate(today());
+    setAddIsPrivate(false);
     fetchSessions();
   };
 
@@ -110,7 +115,7 @@ export default function SessionsPage() {
     await fetch(`${API}/api/sessions/${editState.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editState.name || null, session_date: editState.date }),
+      body: JSON.stringify({ name: editState.name || null, session_date: editState.date, is_private: editState.is_private }),
     });
     setEditState(null);
     fetchSessions();
@@ -192,7 +197,10 @@ export default function SessionsPage() {
                 onClick={() => setExpandedId(expandedId === session.id ? null : session.id)}
               >
                 <div className="min-w-0">
-                  {session.name && <p className="font-semibold truncate">{session.name}</p>}
+                  <div className="flex items-center gap-1.5">
+                    {session.name && <p className="font-semibold truncate">{session.name}</p>}
+                    {session.is_private && <span className="text-gray-400 dark:text-gray-500 text-sm shrink-0" title="Buổi diễn riêng tư">🔒</span>}
+                  </div>
                   <p className={`text-sm ${session.name ? "text-gray-500 dark:text-gray-400" : "font-semibold"}`}>
                     {formatDate(session.session_date)}
                   </p>
@@ -209,7 +217,8 @@ export default function SessionsPage() {
                     onStart={handleStart}
                     onStop={handleStop}
                     onDelete={handleDelete}
-                    onEdit={s => setEditState({ id: s.id, name: s.name ?? "", date: s.session_date })}
+                    onEdit={s => setEditState({ id: s.id, name: s.name ?? "", date: s.session_date, is_private: s.is_private })}
+                    onQR={s => setQrSession(s)}
                   />
                 </div>
               )}
@@ -236,6 +245,15 @@ export default function SessionsPage() {
                 <input type="date" value={addDate} onChange={e => setAddDate(e.target.value)}
                   className={modalInputCls} />
               </div>
+              <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-600 dark:text-gray-300 pt-1">
+                <input
+                  type="checkbox"
+                  checked={addIsPrivate}
+                  onChange={e => setAddIsPrivate(e.target.checked)}
+                  className="w-4 h-4 rounded accent-blue-500"
+                />
+                🔒 Buổi diễn riêng tư (chỉ đăng ký qua QR / link trực tiếp)
+              </label>
             </div>
             <div className="flex gap-3 justify-end mt-5">
               <button onClick={() => setShowAdd(false)}
@@ -252,6 +270,14 @@ export default function SessionsPage() {
       )}
 
       {/* Edit dialog */}
+      {qrSession && (
+        <QRModal
+          url={`${typeof window !== "undefined" ? window.location.origin : ""}/user/register?session_id=${qrSession.id}`}
+          title={qrSession.name ?? formatDate(qrSession.session_date)}
+          onClose={() => setQrSession(null)}
+        />
+      )}
+
       {editState && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700">
@@ -267,6 +293,15 @@ export default function SessionsPage() {
                 <input type="date" value={editState.date} onChange={e => setEditState({ ...editState, date: e.target.value })}
                   className={modalInputCls} />
               </div>
+              <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-600 dark:text-gray-300 pt-1">
+                <input
+                  type="checkbox"
+                  checked={editState.is_private}
+                  onChange={e => setEditState({ ...editState, is_private: e.target.checked })}
+                  className="w-4 h-4 rounded accent-blue-500"
+                />
+                🔒 Buổi diễn riêng tư (chỉ đăng ký qua QR / link trực tiếp)
+              </label>
             </div>
             <div className="flex gap-3 justify-end mt-5">
               <button onClick={() => setEditState(null)}

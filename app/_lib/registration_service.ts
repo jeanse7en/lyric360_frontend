@@ -2,7 +2,7 @@ import { fetchSetting } from "./settings_service";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
-export type Session = { id: string; session_date: string; status: "planned" | "live" | "ended"; order_count: number };
+export type Session = { id: string; session_date: string; status: "planned" | "live" | "ended"; order_count: number; is_private?: boolean };
 export type Song = { id: string; title: string; author?: string };
 export type UserExistingReg = { registration_id: string; song_id: string; song_title: string };
 
@@ -33,6 +33,12 @@ export async function fetchQueueLimit(): Promise<number> {
 export async function fetchAvailableSessions(): Promise<Session[]> {
   const res = await fetch(`${API}/api/sessions/available`);
   if (!res.ok) return [];
+  return res.json();
+}
+
+export async function fetchSessionById(id: string): Promise<Session | null> {
+  const res = await fetch(`${API}/api/sessions/${id}`);
+  if (!res.ok) return null;
   return res.json();
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Header from "../../_components/Header";
 import Footer from "../../_components/Footer";
@@ -11,6 +12,7 @@ import DrinkSelector from "../../_components/DrinkSelector";
 import ToneInput from "../../_components/ToneInput";
 import {
   fetchAvailableSessions,
+  fetchSessionById,
   fetchUserRecentSongs,
   fetchSessionBookingInfo,
   fetchQueueLimit,
@@ -23,7 +25,9 @@ import SuccessScreen from "./_components/SuccessScreen";
 
 type SuccessInfo = { orderNumber: number; userId: string };
 
-export default function MobileRegistration() {
+function MobileRegistrationInner() {
+  const searchParams = useSearchParams();
+  const preselectedSessionId = searchParams.get("session_id");
   const [bookerName, setBookerName] = useState("");
   const [singerName, setSingerName] = useState("");
   const [phone, setPhone] = useState("");
@@ -46,12 +50,18 @@ export default function MobileRegistration() {
 
   useEffect(() => {
     fetchQueueLimit().then(setQueueLimit);
-    fetchAvailableSessions().then((data) => {
-      if (!data.length) return;
-      setSessions(data);
-      setSelectedSessionId(data[0].id);
+    Promise.all([
+      fetchAvailableSessions(),
+      preselectedSessionId ? fetchSessionById(preselectedSessionId) : Promise.resolve(null),
+    ]).then(([available, preselected]) => {
+      const merged = preselected && !available.find(s => s.id === preselected.id)
+        ? [preselected, ...available]
+        : available;
+      if (!merged.length) return;
+      setSessions(merged);
+      setSelectedSessionId(preselectedSessionId ?? merged[0].id);
     });
-  }, []);
+  }, [preselectedSessionId]);
 
   useEffect(() => {
     if (!userId) { setRecentSongs([]); return; }
@@ -185,5 +195,13 @@ export default function MobileRegistration() {
       </div>
       <Footer />
     </div>
+  );
+}
+
+export default function MobileRegistration() {
+  return (
+    <Suspense>
+      <MobileRegistrationInner />
+    </Suspense>
   );
 }

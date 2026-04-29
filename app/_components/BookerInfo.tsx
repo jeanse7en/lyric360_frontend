@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-
-type User = { id: string; name: string; phone_zalo?: string };
+import { searchUsers, getUser, type User } from "../_lib/users_service";
 
 type Props = {
   bookerName: string;
@@ -15,8 +14,6 @@ type Props = {
 };
 
 const inputCls = "w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none";
-
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 const namesMatch = (a: string, b: string) =>
   a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -64,10 +61,7 @@ export default function BookerInfo({ bookerName, singerName, phone, onBookerName
   useEffect(() => {
     const storedId = localStorage.getItem("lyric360_user_id");
     if (!storedId) return;
-    fetch(`${API}/api/users/${storedId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then((user: User | null) => { if (user?.name) selectUser(user); })
-      .catch(() => {});
+    getUser(storedId).then(user => { if (user?.name) selectUser(user); }).catch(() => {});
   }, [selectUser]);
 
   // Keep setCustomValidity in sync with phoneConflict
@@ -106,9 +100,7 @@ export default function BookerInfo({ bookerName, singerName, phone, onBookerName
     if (!v.trim()) { setNameSuggestions([]); setShowNameDropdown(false); return; }
     nameDebounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`${API}/api/users/search?q=${encodeURIComponent(v)}`);
-        if (!res.ok) return;
-        const data: User[] = await res.json();
+        const data = await searchUsers(v);
         setNameSuggestions(data);
         setShowNameDropdown(data.length > 0);
       } catch { /* ignore */ }
@@ -124,9 +116,7 @@ export default function BookerInfo({ bookerName, singerName, phone, onBookerName
     if (v.trim().length < 4) return;
     phoneDebounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`${API}/api/users/search?q=${encodeURIComponent(v.trim())}`);
-        if (!res.ok) return;
-        const data: User[] = await res.json();
+        const data = await searchUsers(v.trim());
         const unconfirmed = data.filter(u => u.id !== confirmedUserIdRef.current);
         if (!unconfirmed.length) return;
 

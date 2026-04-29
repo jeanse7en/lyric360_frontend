@@ -9,6 +9,7 @@ type Session = {
   name?: string;
   session_date: string;
   status: string;
+  is_private: boolean;
   started_at?: string;
   ended_at?: string;
   order_count: number;
@@ -21,9 +22,10 @@ type Props = {
   onStop: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit: (session: Session) => void;
+  onQR: (session: Session) => void;
 };
 
-export default function SessionActionMenu({ session, onStart, onStop, onDelete, onEdit }: Props) {
+export default function SessionActionMenu({ session, onStart, onStop, onDelete, onEdit, onQR }: Props) {
   const router = useRouter();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [startConfirm, setStartConfirm] = useState(false);
@@ -80,6 +82,12 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
             </button>
           </>
         )}
+        <button
+          onClick={() => onQR(session)}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-white transition-colors"
+        >
+          QR đăng ký
+        </button>
         <button
           onClick={() => onEdit(session)}
           className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-white transition-colors"
