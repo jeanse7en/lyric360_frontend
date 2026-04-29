@@ -28,6 +28,8 @@ type SuccessInfo = { orderNumber: number; userId: string };
 function MobileRegistrationInner() {
   const searchParams = useSearchParams();
   const preselectedSessionId = searchParams.get("session_id");
+  const urlAllowDuplicate = searchParams.get("allow_duplicate") === "true";
+  const [allowDuplicate, setAllowDuplicate] = useState(urlAllowDuplicate);
   const [bookerName, setBookerName] = useState("");
   const [singerName, setSingerName] = useState("");
   const [phone, setPhone] = useState("");
@@ -60,6 +62,7 @@ function MobileRegistrationInner() {
       if (!merged.length) return;
       setSessions(merged);
       setSelectedSessionId(preselectedSessionId ?? merged[0].id);
+      if (!urlAllowDuplicate && preselected?.is_private) setAllowDuplicate(true);
     });
   }, [preselectedSessionId]);
 
@@ -88,7 +91,7 @@ function MobileRegistrationInner() {
     if (!singerName) { setError("Vui lòng nhập tên của bạn!"); return; }
     if (!selectedSessionId) { setError("Vui lòng chọn buổi diễn!"); return; }
     if (!selectedSong && !songInputValue.trim()) { setError("Vui lòng chọn hoặc nhập tên bài hát!"); return; }
-    if (userExistingReg) return;
+    if (!allowDuplicate && userExistingReg) return;
     if (queueFull) return;
     setError("");
     setSubmitting(true);
@@ -102,6 +105,7 @@ function MobileRegistrationInner() {
         tone: tone || undefined,
         drinks: selectedDrinks,
         user_id: userId ?? undefined,
+        allow_duplicate: allowDuplicate,
       });
       if (!result.ok) { setError(result.error); return; }
       if (result.data.user_id) localStorage.setItem("lyric360_user_id", result.data.user_id);
@@ -155,7 +159,7 @@ function MobileRegistrationInner() {
               </div>
             )}
 
-            {!queueFull && userExistingReg && (
+            {!queueFull && !allowDuplicate && userExistingReg && (
               <Link
                 href={`/user/history?user_id=${userId}`}
                 className="flex items-center gap-2 px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-sm hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
@@ -168,14 +172,14 @@ function MobileRegistrationInner() {
               </Link>
             )}
 
-            {!queueFull && !userExistingReg && (
+            {!queueFull && (allowDuplicate || !userExistingReg) && (
               <>
                 <SongSearch
                   selectedSong={selectedSong}
                   onSelect={setSelectedSong}
                   onInputChange={setSongInputValue}
                   disabled={!songSearchReady}
-                  bookedSongIds={bookedSongIds}
+                  bookedSongIds={allowDuplicate ? [] : bookedSongIds}
                   recentSongs={recentSongs}
                 />
                 <ToneInput value={tone} onChange={setTone} />

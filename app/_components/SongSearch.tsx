@@ -192,5 +192,5 @@ export default function SongSearch({
         </div>
       )}
     </div>
-  );
+);
 }

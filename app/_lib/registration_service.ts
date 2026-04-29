@@ -20,6 +20,7 @@ export type RegisterPayload = {
   tone?: string;
   drinks: string[];
   user_id?: string;
+  allow_duplicate?: boolean;
 };
 
 export type RegisterResult = { order_number: number; user_id: string };
