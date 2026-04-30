@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fmtTime, fmtDateTime } from "../../../../lib/format";
 import EditRegistrationModal, { type EditableRegistration } from "../../../_components/EditRegistrationModal";
 import ConfirmModal from "../../../_components/ConfirmModal";
+import { fetchSetting } from "../../../_lib/settings_service";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -20,6 +21,7 @@ type Props = {
   queue: any[];
   currentSongId?: string | null;
   sessionStartedAt?: string | null;
+  sessionDate?: string | null;
   onPlay: (queueId: string, songId: string) => void;
   onStop: (queueId: string) => void;
   onViewSong: (songId: string) => void;
@@ -40,13 +42,26 @@ function getHtmlLyricId(item: any): string | null {
   return item.songs?.song_lyrics?.[0]?.id ?? null;
 }
 
-export default function LiveList({ queue, currentSongId, sessionStartedAt, onPlay, onStop, onViewSong, onOpenNote, onPresent, onPresentHtml, onRefresh }: Props) {
+const DEFAULT_TEMPLATE = "🎵 Bài hát: [Bài hát]\n✍️ Tác giả: [Tác giả]\n🎤 Khách hát: [Người hát]";
+
+function formatSessionDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.slice(0, 10).split("-");
+  return `${day}-${month}-${year}`;
+}
+
+export default function LiveList({ queue, currentSongId, sessionStartedAt, sessionDate, onPlay, onStop, onViewSong, onOpenNote, onPresent, onPresentHtml, onRefresh }: Props) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [editingItem, setEditingItem] = useState<EditableRegistration | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [copyTemplate, setCopyTemplate] = useState(DEFAULT_TEMPLATE);
   const router = useRouter();
+
+  useEffect(() => {
+    fetchSetting("copy_fb_template").then(val => { if (val) setCopyTemplate(val); });
+  }, []);
 
   const handleDelete = async (id: string) => {
     await fetch(`${API}/api/queue/registrations/${id}`, { method: "DELETE" });
@@ -55,14 +70,11 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, onPla
   };
 
   const handleCopyFB = (item: any) => {
-    const text = `🎵 Bài hát: ${item.songs?.title ?? item.free_text_song_name ?? ""}
-✍️ Tác giả: ${item.songs?.author ?? ""}
-🎤 Khách hát: ${item.singer_name}
-🎸 Đệm đàn: Hà Đàm
-
-🎶 Cafe ĐÀM HÀ
-📍 Địa chỉ: 45 Huỳnh Thúc Kháng
-📝 Đăng ký bài hát: https://lyric360.vn (Mở vào 8h sáng)`;
+    const text = copyTemplate
+      .split("[Bài hát]").join(item.songs?.title ?? item.free_text_song_name ?? "")
+      .split("[Tác giả]").join(item.songs?.author ?? "")
+      .split("[Người hát]").join(item.singer_name ?? "")
+      .split("[Ngày diễn]").join(formatSessionDate(sessionDate));
     navigator.clipboard.writeText(text).then(() => {
       setCopiedId(item.id);
       setTimeout(() => setCopiedId(null), 2000);

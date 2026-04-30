@@ -21,6 +21,7 @@ export default function LiveDashboard() {
   const [currentSongId, setCurrentSongId] = useState<string | null>(null);
   const [noteDialog, setNoteDialog] = useState({ isOpen: false, queueId: '', tone: '', note: '', rating: 5 });
   const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(null);
+  const [sessionDate, setSessionDate] = useState<string | null>(null);
 
   const fetchQueue = async () => {
     const { data } = await supabase
@@ -38,8 +39,11 @@ export default function LiveDashboard() {
 
   useEffect(() => {
     if (!sessionId) return;
-    supabase.from("live_sessions").select("started_at").eq("id", sessionId).single()
-      .then(({ data }) => { if (data?.started_at) setSessionStartedAt(data.started_at); });
+    supabase.from("live_sessions").select("started_at, session_date").eq("id", sessionId).single()
+      .then(({ data }) => {
+        if (data?.started_at) setSessionStartedAt(data.started_at);
+        if (data?.session_date) setSessionDate(data.session_date);
+      });
   }, [sessionId]);
 
   useEffect(() => {
@@ -127,6 +131,7 @@ export default function LiveDashboard() {
             queue={queue}
             currentSongId={currentSongId}
             sessionStartedAt={sessionStartedAt}
+            sessionDate={sessionDate}
             onPlay={handlePlay}
             onStop={handleStop}
             onViewSong={handleViewSong}
@@ -145,6 +150,7 @@ export default function LiveDashboard() {
                 queue={queue}
                 currentSongId={currentSongId}
                 sessionStartedAt={sessionStartedAt}
+                sessionDate={sessionDate}
                 onPlay={handlePlay}
                 onStop={handleStop}
                 onViewSong={handleViewSongAndCollapse}

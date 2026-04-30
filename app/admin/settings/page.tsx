@@ -7,6 +7,7 @@ import DrinksSection from "./_components/DrinksSection";
 import RegistrationSection from "./_components/RegistrationSection";
 import SongDisplaySection from "./_components/SongDisplaySection";
 import QRSection from "./_components/QRSection";
+import CopyFBSection from "./_components/CopyFBSection";
 
 export default function SettingsPage() {
   return (
@@ -34,6 +35,13 @@ export default function SettingsPage() {
           description="Cài đặt mặc định cho màn hình hiển thị lời bài hát."
         >
           <SongDisplaySection />
+        </SectionCard>
+
+        <SectionCard
+          title="Nội dung Copy FB"
+          description="Mẫu văn bản khi nhấn Copy FB trong hàng đợi. Dùng tag [Bài hát], [Tác giả], [Người hát], [Ngày diễn]."
+        >
+          <CopyFBSection />
         </SectionCard>
 
         <SectionCard
