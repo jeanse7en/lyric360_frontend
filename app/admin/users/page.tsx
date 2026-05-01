@@ -106,6 +106,15 @@ export default function UsersPage() {
   const [hasMore, setHasMore] = useState(true);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyHistoryLink = (userId: string) => {
+    const url = `${window.location.origin}/user/history?user_id=${userId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(userId);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -230,6 +239,13 @@ export default function UsersPage() {
       cellClassName: "text-right",
       cell: u => (
         <div className="flex items-center justify-end gap-1">
+          <button
+            onClick={() => handleCopyHistoryLink(u.id)}
+            title="Copy link lịch sử"
+            className="px-2 py-1 rounded text-xs font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            {copiedId === u.id ? "✓" : "🔗"}
+          </button>
           <button
             onClick={() => setEditUser(u)}
             className="px-2 py-1 rounded text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"

@@ -58,11 +58,24 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copyTemplate, setCopyTemplate] = useState(DEFAULT_TEMPLATE);
   const [sortBy, setSortBy] = useState<"created_at" | "actual_start">("created_at");
+  const [videoInputId, setVideoInputId] = useState<string | null>(null);
+  const [videoInputValue, setVideoInputValue] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     fetchSetting("copy_fb_template").then(val => { if (val) setCopyTemplate(val); });
   }, []);
+
+  const handleSaveVideoUrl = async (id: string) => {
+    await fetch(`${API}/api/queue/registrations/${id}/video-url`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ video_url: videoInputValue }),
+    });
+    setVideoInputId(null);
+    setVideoInputValue("");
+    onRefresh?.();
+  };
 
   const handleDelete = async (id: string) => {
     await fetch(`${API}/api/queue/registrations/${id}`, { method: "DELETE" });
@@ -178,6 +191,19 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
                           🥤 {item.drinks.map((d: string) => DRINK_LABELS[d] ?? d).join(", ")}
                         </span>
                       )}
+                      {item.video_url && (
+                        <a
+                          href={item.video_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="ml-2 text-green-500 hover:text-green-400"
+                          title="Xem video"
+                        >🎬</a>
+                      )}
+                      {item.want_facebook_post && (
+                        <span className="ml-1 text-blue-400" title="Khách yêu cầu đăng Facebook">📤</span>
+                      )}
                     </div>
                     {(item.actual_start || item.actual_end) && (
                       <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
@@ -260,6 +286,42 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
                     className="flex-1 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
                   >
                     {copiedId === item.id ? "✓ Đã copy!" : "📋 Copy FB"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setVideoInputId(videoInputId === item.id ? null : item.id);
+                      setVideoInputValue(item.video_url ?? "");
+                    }}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      item.video_url
+                        ? "bg-green-600 hover:bg-green-500 text-white"
+                        : "bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-white"
+                    }`}
+                  >
+                    🎬 Video
+                  </button>
+                </div>
+              )}
+              {isOpen && videoInputId === item.id && (
+                <div className="flex gap-2 px-1 pb-2">
+                  <input
+                    type="text"
+                    value={videoInputValue}
+                    onChange={e => setVideoInputValue(e.target.value)}
+                    placeholder="Dán link video vào đây..."
+                    className="flex-1 px-3 py-1.5 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={() => handleSaveVideoUrl(item.id)}
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-500 text-white transition-colors"
+                  >
+                    Lưu
+                  </button>
+                  <button
+                    onClick={() => setVideoInputId(null)}
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 text-gray-700 dark:text-white transition-colors"
+                  >
+                    Huỷ
                   </button>
                 </div>
               )}

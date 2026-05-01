@@ -23,6 +23,7 @@ type QueueItem = {
   session_id: string;
   drinks: string[];
   video_url?: string | null;
+  want_facebook_post?: boolean;
   order_number?: number | null;
 };
 
@@ -47,10 +48,17 @@ function UserLyricContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [editingItem, setEditingItem] = useState<QueueItem | null>(null);
+  const [fbConfirmId, setFbConfirmId] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
     await fetch(`${API}/api/queue/registrations/${id}`, { method: "DELETE" });
     setItems(prev => prev.filter(i => i.registration_id !== id));
+  };
+
+  const handleFacebookPost = async (id: string) => {
+    await fetch(`${API}/api/queue/registrations/${id}/facebook-post`, { method: "POST" });
+    setItems(prev => prev.map(i => i.registration_id === id ? { ...i, want_facebook_post: true } : i));
+    setFbConfirmId(null);
   };
 
   // Name search state (shown when no userId yet)
@@ -228,6 +236,21 @@ function UserLyricContent() {
                         🎬 Xem video ↗
                       </a>
                     )}
+                    {item.video_url && (
+                      item.want_facebook_post ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-500 dark:bg-blue-900/40 dark:text-blue-300">
+                          📤 Đã yêu cầu đăng
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); setFbConfirmId(item.registration_id); }}
+                          className="text-xs px-2 py-0.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                        >
+                          📤 Đăng Facebook
+                        </button>
+                      )
+                    )}
                     {item.status !== "done" && (
                       <div className="flex items-center gap-1 mt-0.5">
                         <button
@@ -254,6 +277,34 @@ function UserLyricContent() {
           </ul>
         )}
       </div>
+
+      {fbConfirmId && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-sm w-full text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-bold mb-2">Đăng video lên Facebook?</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+              Admin sẽ đăng video này lên trang Facebook của chương trình.
+            </p>
+            <p className="text-sm text-amber-600 dark:text-amber-400 mb-5">
+              ⚠️ Sau khi nhấn ĐĂNG, bạn cần liên hệ Admin để gỡ bài nếu muốn xoá.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setFbConfirmId(null)}
+                className="px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
+              >
+                Huỷ
+              </button>
+              <button
+                onClick={() => handleFacebookPost(fbConfirmId)}
+                className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium"
+              >
+                📤 Đăng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {editingItem && (
         <EditRegistrationModal

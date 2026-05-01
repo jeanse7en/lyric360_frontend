@@ -24,13 +24,16 @@ type Props = {
   onDelete: (id: string) => void;
   onEdit: (session: Session) => void;
   onQR: (session: Session) => void;
+  onLinkPhotos: (id: string) => void;
 };
 
-export default function SessionActionMenu({ session, onStart, onStop, onDelete, onEdit, onQR }: Props) {
+export default function SessionActionMenu({ session, onStart, onStop, onDelete, onEdit, onQR, onLinkPhotos }: Props) {
   const router = useRouter();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [startConfirm, setStartConfirm] = useState(false);
   const [stopConfirm, setStopConfirm] = useState(false);
+  const [linking, setLinking] = useState(false);
+  const [linkResult, setLinkResult] = useState<string | null>(null);
   return (
     <div className="mt-3 pt-3 border-t border-gray-700 space-y-2">
       {/* Stats row */}
@@ -92,6 +95,26 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
         >
           QR đăng ký
         </button>
+        <button
+          disabled={linking}
+          onClick={async () => {
+            setLinking(true);
+            setLinkResult(null);
+            try {
+              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/sessions/${session.id}/link-photos-videos`, { method: "POST" });
+              const d = await res.json();
+              if (res.ok) setLinkResult(`✓ Đã link ${d.linked} video (${d.skipped} bỏ qua)`);
+              else setLinkResult(`✗ ${d.detail ?? "Lỗi"}`);
+            } catch { setLinkResult("✗ Không thể kết nối"); }
+            finally { setLinking(false); }
+          }}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50"
+        >
+          {linking ? "⏳..." : "📷 Link Photos"}
+        </button>
+        {linkResult && (
+          <span className="text-xs text-gray-300 self-center">{linkResult}</span>
+        )}
         <button
           onClick={() => onEdit(session)}
           className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-white transition-colors"

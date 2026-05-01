@@ -220,6 +220,7 @@ export default function SessionsPage() {
                     onDelete={handleDelete}
                     onEdit={s => setEditState({ id: s.id, name: s.name ?? "", date: s.session_date, is_private: s.is_private })}
                     onQR={s => setQrSession(s)}
+                    onLinkPhotos={() => {}}
                   />
                 </div>
               )}

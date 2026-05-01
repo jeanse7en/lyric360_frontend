@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Header from "../../_components/Header";
 import Footer from "../../_components/Footer";
 import SectionCard from "./_components/SectionCard";
@@ -8,6 +9,7 @@ import RegistrationSection from "./_components/RegistrationSection";
 import SongDisplaySection from "./_components/SongDisplaySection";
 import QRSection from "./_components/QRSection";
 import CopyFBSection from "./_components/CopyFBSection";
+import GooglePhotosSection from "./_components/GooglePhotosSection";
 
 export default function SettingsPage() {
   return (
@@ -42,6 +44,15 @@ export default function SettingsPage() {
           description="Mẫu văn bản khi nhấn Copy FB trong hàng đợi. Dùng tag [Bài hát], [Tác giả], [Người hát], [Ngày diễn]."
         >
           <CopyFBSection />
+        </SectionCard>
+
+        <SectionCard
+          title="Google Photos"
+          description="Kết nối tài khoản Google Photos một lần. Sau đó hệ thống tự đọc video để ghép vào bài hát."
+        >
+          <Suspense fallback={null}>
+            <GooglePhotosSection />
+          </Suspense>
         </SectionCard>
 
         <SectionCard
