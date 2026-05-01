@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 type Song = { id: string; title: string; author?: string };
 
@@ -37,15 +37,20 @@ export default function SongSearch({
   const [hasMore, setHasMore] = useState(true);
   const [allowFreeText, setAllowFreeText] = useState(false);
   const [freeTextValue, setFreeTextValue] = useState("");
+  const [loading, setLoading] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLUListElement>(null);
 
   const fetchSongs = async (q: string, currentOffset: number, append = false) => {
+    setLoading(true);
     try {
-      const res = await fetch(`${API}/api/songs/search?q=${q}&offset=${currentOffset}&limit=20`);
+      const res = await fetch(`${API}/api/songs/search?q=${encodeURIComponent(q)}&offset=${currentOffset}&limit=20`);
       if (!res.ok) return;
       const data: Song[] = await res.json();
       setHasMore(data.length === 20);
       setResults(prev => (append ? [...prev, ...data] : data));
     } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => {
@@ -54,12 +59,21 @@ export default function SongSearch({
     return () => clearTimeout(id);
   }, [inputValue, isOpen, disabled, allowFreeText]);
 
-  const loadMore = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const next = offset + 20;
-    setOffset(next);
-    fetchSongs(inputValue, next, true);
-  };
+  useEffect(() => {
+    if (!sentinelRef.current || !scrollRef.current || !hasMore) return;
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && !loading) {
+          const next = offset + 20;
+          setOffset(next);
+          fetchSongs(inputValue, next, true);
+        }
+      },
+      { root: scrollRef.current, threshold: 0.1 },
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, offset, loading, inputValue, isOpen]);
 
   const handleSelect = (song: Song) => {
     if (bookedSongIds.includes(song.id)) return;
@@ -114,7 +128,7 @@ export default function SongSearch({
                   <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Bài hát được thể hiện gần đây</span>
                 </div>
               )}
-              <ul className="max-h-60 overflow-y-auto">
+              <ul ref={scrollRef} className="max-h-60 overflow-y-auto">
                 {listItems.map(song => {
                   const booked = bookedSongIds.includes(song.id);
                   const recent = recentSongIds.has(song.id);
@@ -148,15 +162,11 @@ export default function SongSearch({
                 {listItems.length === 0 && (
                   <li className="px-4 py-3 text-sm text-gray-400 italic">Không tìm thấy bài hát nào</li>
                 )}
+                {!showRecent && hasMore && <div ref={sentinelRef} className="h-4" />}
+                {!showRecent && loading && (
+                  <li className="px-4 py-2 text-xs text-gray-400 text-center">Đang tải...</li>
+                )}
               </ul>
-              {!showRecent && hasMore && (
-                <button
-                  onClick={loadMore}
-                  className="w-full text-center py-2 text-sm text-blue-600 dark:text-blue-400 font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  ⬇ Tải thêm bài hát...
-                </button>
-              )}
             </div>
           )}
         </div>
