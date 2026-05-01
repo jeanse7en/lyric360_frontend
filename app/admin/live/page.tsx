@@ -16,6 +16,7 @@ type Session = {
   ended_at?: string;
   order_count: number;
   unverified_song_count: number;
+  free_text_song_count: number;
 };
 
 const API = process.env.NEXT_PUBLIC_API_URL;

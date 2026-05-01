@@ -14,6 +14,7 @@ type Session = {
   ended_at?: string;
   order_count: number;
   unverified_song_count: number;
+  free_text_song_count: number;
 };
 
 type Props = {
@@ -37,6 +38,9 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
         <span>🎤 {session.order_count} lượt đăng ký</span>
         {session.unverified_song_count > 0 && (
           <span className="text-amber-400">⚠️ {session.unverified_song_count} bài chưa xác nhận</span>
+        )}
+        {session.free_text_song_count > 0 && (
+          <span className="text-orange-400">⚠️ {session.free_text_song_count} bài chưa có trong hệ thống</span>
         )}
         {session.started_at && <span>▶ {new Date(session.started_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</span>}
         {session.ended_at && <span>⏹ {new Date(session.ended_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</span>}

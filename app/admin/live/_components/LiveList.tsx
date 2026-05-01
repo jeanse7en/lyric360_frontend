@@ -134,7 +134,11 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
                 <div className="flex items-center gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-gray-900 dark:text-white truncate">
-                      {index + 1}. {item.songs?.title}
+                      {index + 1}.{" "}
+                      {item.songs?.title ?? item.free_text_song_name}
+                      {item.free_text_song_name && (
+                        <span className="ml-1.5 text-amber-500" title="Bài hát chưa có trong hệ thống">⚠️</span>
+                      )}
                       {item.songs?.author && <span className="ml-1.5 text-xs font-normal text-gray-400 dark:text-gray-500">{item.songs.author}</span>}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
