@@ -57,6 +57,7 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copyTemplate, setCopyTemplate] = useState(DEFAULT_TEMPLATE);
+  const [sortBy, setSortBy] = useState<"created_at" | "actual_start">("created_at");
   const router = useRouter();
 
   useEffect(() => {
@@ -90,6 +91,15 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
 
   const toggle = (id: string) => setOpenMenuId(prev => prev === id ? null : id);
 
+  const sortedQueue = [...queue].sort((a, b) => {
+    if (sortBy === "actual_start") {
+      const ta = a.actual_start ? new Date(a.actual_start).getTime() : Infinity;
+      const tb = b.actual_start ? new Date(b.actual_start).getTime() : Infinity;
+      return ta - tb;
+    }
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
+
   return (
     <div className="w-full bg-white dark:bg-gray-800 rounded-xl p-4 shadow-2xl overflow-y-auto max-h-[90vh]">
       <div className="flex items-center gap-3 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
@@ -100,19 +110,32 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Bắt đầu: {fmtDateTime(sessionStartedAt)}</p>
           )}
         </div>
-        {onRefresh && (
+        <div className="ml-auto flex items-center gap-1.5">
           <button
-            onClick={handleRefresh}
-            className="ml-auto w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
-            title="Làm mới hàng đợi"
+            onClick={() => setSortBy(s => s === "created_at" ? "actual_start" : "created_at")}
+            className={`px-2 py-1 rounded-lg text-[11px] font-medium border transition-colors ${
+              sortBy === "actual_start"
+                ? "bg-blue-600 border-blue-600 text-white"
+                : "bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-300"
+            }`}
+            title={sortBy === "created_at" ? "Đang sắp xếp theo thời gian đăng ký" : "Đang sắp xếp theo giờ diễn"}
           >
-            <span style={{ display: "inline-block", transition: "transform 0.6s ease", transform: spinning ? "rotate(360deg)" : "rotate(0deg)" }}>↺</span>
+            {sortBy === "actual_start" ? "⏱ Giờ diễn" : "📋 Đăng ký"}
           </button>
-        )}
+          {onRefresh && (
+            <button
+              onClick={handleRefresh}
+              className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
+              title="Làm mới hàng đợi"
+            >
+              <span style={{ display: "inline-block", transition: "transform 0.6s ease", transform: spinning ? "rotate(360deg)" : "rotate(0deg)" }}>↺</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2">
-        {queue.map((item, index) => {
+        {sortedQueue.map((item, index) => {
           const isOpen = openMenuId === item.id;
           const htmlLyricId = getHtmlLyricId(item);
 
