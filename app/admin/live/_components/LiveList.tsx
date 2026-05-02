@@ -85,8 +85,9 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
   };
 
   const handleCopyFB = (item: any) => {
+    const songTitle = (item.songs?.title ?? item.free_text_song_name ?? "").toUpperCase();
     const text = copyTemplate
-      .split("[Bài hát]").join(item.songs?.title ?? item.free_text_song_name ?? "")
+      .split("[Bài hát]").join(songTitle)
       .split("[Tác giả]").join(item.songs?.author ?? "")
       .split("[Người hát]").join(item.singer_name ?? "")
       .split("[Ngày diễn]").join(formatSessionDate(sessionDate));
