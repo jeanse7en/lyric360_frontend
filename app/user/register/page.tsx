@@ -41,8 +41,10 @@ function MobileRegistrationInner() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [bookedSongIds, setBookedSongIds] = useState<string[]>([]);
+  const [takenPreorderNumbers, setTakenPreorderNumbers] = useState<number[]>([]);
   const [recentSongs, setRecentSongs] = useState<Song[]>([]);
   const [userExistingReg, setUserExistingReg] = useState<UserExistingReg | null>(null);
+  const [preorderNumber, setPreorderNumber] = useState<number | null>(null);
   const [queueLimit, setQueueLimit] = useState<number>(30);
   const [success, setSuccess] = useState<SuccessInfo | null>(null);
   const [error, setError] = useState("");
@@ -74,13 +76,21 @@ function MobileRegistrationInner() {
   useEffect(() => {
     setUserExistingReg(null);
     setBookedSongIds([]);
+    setTakenPreorderNumbers([]);
     setSelectedSong(null);
     if (!selectedSessionId) return;
     fetchSessionBookingInfo(selectedSessionId, userId).then((info) => {
       setBookedSongIds(info.booked_song_ids);
       setUserExistingReg(info.user_registration);
+      setTakenPreorderNumbers(info.taken_preorder_numbers);
     });
   }, [selectedSessionId, userId]);
+
+  // Auto-select smallest available preorder slot whenever session / taken slots change
+  useEffect(() => {
+    const firstAvailable = Array.from({ length: queueLimit }, (_, i) => i + 1).find(n => !takenPreorderNumbers.includes(n));
+    setPreorderNumber(firstAvailable ?? null);
+  }, [takenPreorderNumbers, queueLimit]);
 
   const selectedSession = sessions.find((s) => s.id === selectedSessionId);
   const queueFull = !!selectedSession && selectedSession.order_count >= queueLimit;
@@ -106,6 +116,7 @@ function MobileRegistrationInner() {
         drinks: selectedDrinks,
         user_id: userId ?? undefined,
         allow_duplicate: allowDuplicate,
+        preorder_number: preorderNumber ?? undefined,
       });
       if (!result.ok) { setError(result.error); return; }
       if (result.data.user_id) localStorage.setItem("lyric360_user_id", result.data.user_id);
@@ -150,6 +161,26 @@ function MobileRegistrationInner() {
               onPhoneChange={setPhone}
               onUserIdChange={setUserId}
             />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Số thứ tự <span className="font-normal text-gray-400">(tuỳ chọn)</span>
+              </label>
+              <select
+                value={preorderNumber ?? ""}
+                onChange={e => setPreorderNumber(e.target.value ? Number(e.target.value) : null)}
+                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              >
+                <option value="">-- Không chọn --</option>
+                {Array.from({ length: queueLimit }, (_, i) => i + 1).map((n) => {
+                  const taken = takenPreorderNumbers.includes(n);
+                  return (
+                    <option key={n} value={n} disabled={taken}>
+                      {n}{taken ? " (đã đặt)" : ""}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
             <SessionSelector sessions={sessions} selectedId={selectedSessionId} onChange={setSelectedSessionId} />
 
             {queueFull && (

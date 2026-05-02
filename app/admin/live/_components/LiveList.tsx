@@ -110,6 +110,10 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
       const tb = b.actual_start ? new Date(b.actual_start).getTime() : Infinity;
       return ta - tb;
     }
+    // preorder_number first (nulls last), then created_at
+    const pa = a.preorder_number ?? Infinity;
+    const pb = b.preorder_number ?? Infinity;
+    if (pa !== pb) return pa - pb;
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
   });
 
@@ -170,7 +174,10 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
                 <div className="flex items-center gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-gray-900 dark:text-white truncate">
-                      {index + 1}.{" "}
+                      {item.preorder_number != null
+                        ? <span className="inline-flex items-center justify-center w-5 h-5 mr-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-[10px] font-bold">{item.preorder_number}</span>
+                        : <span className="text-gray-400 font-normal text-xs mr-1">{index + 1}.</span>
+                      }
                       {item.songs?.title ?? item.free_text_song_name}
                       {item.free_text_song_name && (
                         <span className="ml-1.5 text-amber-500" title="Bài hát chưa có trong hệ thống">⚠️</span>

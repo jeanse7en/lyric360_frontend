@@ -16,6 +16,7 @@ type QueueRow = {
   created_at: string;
   free_text_song_name?: string | null;
   songs?: Song | null;
+  preorder_number?: number | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -30,7 +31,7 @@ const columns: Column<QueueRow>[] = [
     header: "#",
     headerClassName: "w-10 text-center",
     cellClassName: "text-center text-gray-400 tabular-nums text-xs",
-    cell: (_, i) => i + 1,
+    cell: (row, i) => row.preorder_number ?? i + 1,
   },
   {
     key: "song",

@@ -9,6 +9,7 @@ export type UserExistingReg = { registration_id: string; song_id: string; song_t
 export type SessionBookingInfo = {
   booked_song_ids: string[];
   user_registration: UserExistingReg | null;
+  taken_preorder_numbers: number[];
 };
 
 export type RegisterPayload = {
@@ -21,6 +22,7 @@ export type RegisterPayload = {
   drinks: string[];
   user_id?: string;
   allow_duplicate?: boolean;
+  preorder_number?: number;
 };
 
 export type RegisterResult = { order_number: number; user_id: string };
@@ -69,6 +71,7 @@ export async function fetchSessionBookingInfo(
   return {
     booked_song_ids: data.booked_song_ids ?? [],
     user_registration: data.user_registration ?? null,
+    taken_preorder_numbers: data.taken_preorder_numbers ?? [],
   };
 }
 

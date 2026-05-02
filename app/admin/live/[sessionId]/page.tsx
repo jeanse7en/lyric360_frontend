@@ -26,7 +26,7 @@ export default function LiveDashboard() {
   const fetchQueue = async () => {
     const { data } = await supabase
       .from("queue_registrations")
-      .select(`id, singer_name, booker_phone, table_position, drinks, status, actual_tone, note, rating, created_at, actual_start, actual_end, free_text_song_name,
+      .select(`id, singer_name, booker_phone, table_position, drinks, status, actual_tone, note, rating, created_at, actual_start, actual_end, free_text_song_name, preorder_number,
         songs ( id, title, author, song_lyrics ( id ) )`)
       .eq("session_id", sessionId)
       .order("created_at", { ascending: true });
