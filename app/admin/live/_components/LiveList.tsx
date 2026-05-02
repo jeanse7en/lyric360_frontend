@@ -175,8 +175,11 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
                         {item.free_text_song_name && (
                           <span className="ml-1.5 text-amber-500" title="Bài hát chưa có trong hệ thống">⚠️</span>
                         )}
-                        {!item.free_text_song_name && item.songs?.song_lyrics?.some((l: any) => !l.verified_at) && (
-                          <span className="ml-1.5 text-orange-400 text-xs font-normal" title="Lời bài hát chưa được xác nhận">chưa xác nhận</span>
+                        {!item.free_text_song_name && item.songs && (
+                          item.songs.song_lyrics?.some((l: any) => !l.verified_at) ||
+                          item.songs.song_sheets?.some((s: any) => !s.verified_at)
+                        ) && (
+                          <span className="ml-1.5 text-orange-400 text-xs font-normal" title="Bài hát chưa được xác nhận">chưa xác nhận</span>
                         )}
                         {item.songs?.author && <span className="ml-1.5 text-xs font-normal text-gray-400 dark:text-gray-500">{item.songs.author}</span>}
                       </div>

@@ -14,6 +14,8 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+const API = process.env.NEXT_PUBLIC_API_URL;
+
 export default function LiveDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
 
@@ -24,17 +26,12 @@ export default function LiveDashboard() {
   const [sessionDate, setSessionDate] = useState<string | null>(null);
 
   const fetchQueue = async () => {
-    const { data } = await supabase
-      .from("queue_registrations")
-      .select(`id, singer_name, booker_phone, table_position, drinks, status, actual_tone, note, rating, created_at, actual_start, actual_end, free_text_song_name, preorder_number,
-        songs ( id, title, author, song_lyrics ( id, verified_at ) )`)
-      .eq("session_id", sessionId)
-      .order("created_at", { ascending: true });
-
-    setQueue(data || []);
-
-    const playingSong = (data as any[])?.find(item => item.status === "playing");
-    if (playingSong && !currentSongId) setCurrentSongId(playingSong.songs.id);
+    const res = await fetch(`${API}/api/sessions/${sessionId}/queue`);
+    if (!res.ok) return;
+    const data = await res.json();
+    setQueue(data);
+    const playingSong = data.find((item: any) => item.status === "playing");
+    if (playingSong && !currentSongId) setCurrentSongId(playingSong.songs?.id);
   };
 
   useEffect(() => {
@@ -49,6 +46,7 @@ export default function LiveDashboard() {
   useEffect(() => {
     if (!sessionId) return;
     fetchQueue();
+    // Supabase realtime used only as a trigger to re-fetch from the backend API
     const channel = supabase
       .channel(`queue_${sessionId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "queue_registrations", filter: `session_id=eq.${sessionId}` }, fetchQueue)
@@ -65,20 +63,14 @@ export default function LiveDashboard() {
   const handleStop = async (queueId: string) => {
     await supabase.from("queue_registrations").update({ status: "done", actual_end: new Date().toISOString() }).eq("id", queueId);
     const next = queue.find(item => item.status === "waiting" && item.id !== queueId);
-    if (next) setCurrentSongId(next.songs.id);
+    if (next) setCurrentSongId(next.songs?.id);
   };
 
-  const handleViewSong = (songId: string) => {
-    setCurrentSongId(songId);
-  };
+  const handleViewSong = (songId: string) => setCurrentSongId(songId);
 
   const handlePresent = async (url: string) => {
     await supabase.from("live_sessions").update({ presenting_lyric_url: url }).eq("id", sessionId);
-    await supabase.channel(`lyric_present_${sessionId}`).send({
-      type: "broadcast",
-      event: "present",
-      payload: { url },
-    });
+    await supabase.channel(`lyric_present_${sessionId}`).send({ type: "broadcast", event: "present", payload: { url } });
   };
 
   const handlePresentHtml = (lyricId: string) => handlePresentConfig(lyricId, DEFAULT_STYLE);
@@ -86,11 +78,7 @@ export default function LiveDashboard() {
   const handlePresentConfig = async (lyricId: string, style: LyricHtmlStyle) => {
     const url = `/live/lyric?lyric_id=${lyricId}&${styleToParams(style)}`;
     await supabase.from("live_sessions").update({ presenting_lyric_url: url }).eq("id", sessionId);
-    await supabase.channel(`lyric_present_${sessionId}`).send({
-      type: "broadcast",
-      event: "present",
-      payload: { url },
-    });
+    await supabase.channel(`lyric_present_${sessionId}`).send({ type: "broadcast", event: "present", payload: { url } });
   };
 
   const saveNote = async () => {
@@ -105,7 +93,7 @@ export default function LiveDashboard() {
 
   useEffect(() => {
     if (!currentSongId) return;
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/songs/${currentSongId}`)
+    fetch(`${API}/api/songs/${currentSongId}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setCurrentSongDetail(data); });
   }, [currentSongId]);
@@ -159,7 +147,6 @@ export default function LiveDashboard() {
                 onRefresh={fetchQueue}
               />
             </div>
-            {/* Backdrop */}
             <div className="flex-1 bg-black/50" onClick={() => setQueueOpen(false)} />
           </div>
         )}
@@ -179,7 +166,6 @@ export default function LiveDashboard() {
         </div>
       </div>
 
-      {/* Mobile queue toggle FAB */}
       <button
         className="md:hidden fixed bottom-6 left-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-xl font-medium text-sm transition-colors"
         onClick={() => setQueueOpen(v => !v)}
