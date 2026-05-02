@@ -10,6 +10,7 @@ import SongDisplaySection from "./_components/SongDisplaySection";
 import QRSection from "./_components/QRSection";
 import CopyFBSection from "./_components/CopyFBSection";
 import GooglePhotosSection from "./_components/GooglePhotosSection";
+import PreorderListSection from "./_components/PreorderListSection";
 
 export default function SettingsPage() {
   return (
@@ -53,6 +54,13 @@ export default function SettingsPage() {
           <Suspense fallback={null}>
             <GooglePhotosSection />
           </Suspense>
+        </SectionCard>
+
+        <SectionCard
+          title="Danh sách Pre-order"
+          description="Bài hát được đặt sẵn — tự động thêm vào hàng đợi khi tạo buổi diễn mới."
+        >
+          <PreorderListSection />
         </SectionCard>
 
         <SectionCard
