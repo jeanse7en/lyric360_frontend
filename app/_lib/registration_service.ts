@@ -66,7 +66,7 @@ export async function fetchSessionBookingInfo(
 ): Promise<SessionBookingInfo> {
   const url = `${API}/api/sessions/${sessionId}/booked-songs${userId ? `?user_id=${userId}` : ""}`;
   const res = await fetch(url);
-  if (!res.ok) return { booked_song_ids: [], user_registration: null };
+  if (!res.ok) return { booked_song_ids: [], user_registration: null, taken_preorder_numbers: [] };
   const data = await res.json();
   return {
     booked_song_ids: data.booked_song_ids ?? [],
