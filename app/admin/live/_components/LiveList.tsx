@@ -6,6 +6,7 @@ import { fmtTime, fmtDateTime } from "../../../../lib/format";
 import EditRegistrationModal, { type EditableRegistration } from "../../../_components/EditRegistrationModal";
 import ConfirmModal from "../../../_components/ConfirmModal";
 import { fetchSetting } from "../../../_lib/settings_service";
+import AccordionRow from "../../../_components/AccordionRow";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -158,159 +159,146 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
 
           return (
             <div key={item.id}>
-              {/* Row — clickable */}
-              <div
-                onClick={() => toggle(item.id)}
-                className={`p-3 rounded-lg border cursor-pointer transition-all select-none ${
-                  item.status === "playing"
-                    ? "bg-blue-50 dark:bg-blue-900 border-blue-400 dark:border-blue-500"
-                    : item.status === "done"
-                    ? "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-60"
-                    : isOpen
-                    ? "bg-gray-100 dark:bg-gray-600 border-gray-300 dark:border-gray-500"
-                    : "bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-gray-900 dark:text-white truncate">
-                      {item.preorder_number != null
-                        ? <span className="inline-flex items-center justify-center w-5 h-5 mr-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-[10px] font-bold">{item.preorder_number}</span>
-                        : <span className="text-gray-400 font-normal text-xs mr-1">{index + 1}.</span>
-                      }
-                      {item.songs?.title ?? item.free_text_song_name}
-                      {item.free_text_song_name && (
-                        <span className="ml-1.5 text-amber-500" title="Bài hát chưa có trong hệ thống">⚠️</span>
-                      )}
-                      {item.songs?.author && <span className="ml-1.5 text-xs font-normal text-gray-400 dark:text-gray-500">{item.songs.author}</span>}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {item.singer_name}
-                      {item.booker_phone && (
-                        <a
-                          href={`tel:${item.booker_phone}`}
-                          onClick={e => e.stopPropagation()}
-                          className="ml-2 font-mono hover:text-blue-400 underline underline-offset-2"
-                        >{item.booker_phone}</a>
-                      )}
-                      {item.drinks?.length > 0 && (
-                        <span className="ml-2 text-blue-400">
-                          🥤 {item.drinks.map((d: string) => DRINK_LABELS[d] ?? d).join(", ")}
-                        </span>
-                      )}
-                      {item.video_url && (
-                        <a
-                          href={item.video_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={e => e.stopPropagation()}
-                          className="ml-2 text-green-500 hover:text-green-400"
-                          title="Xem video"
-                        >🎬</a>
-                      )}
-                      {item.want_facebook_post && (
-                        <span className="ml-1 text-blue-400" title="Khách yêu cầu đăng Facebook">📤</span>
-                      )}
-                    </div>
-                    {(item.actual_start || item.actual_end) && (
-                      <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                        {fmtTime(item.actual_start)}
-                        {item.actual_end && <> → {fmtTime(item.actual_end)}</>}
+              <AccordionRow
+                isOpen={isOpen}
+                onToggle={() => toggle(item.id)}
+                highlight={item.status === "playing" ? "active" : item.status === "done" ? "dim" : "none"}
+                summary={
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-gray-900 dark:text-white truncate">
+                        {item.preorder_number != null
+                          ? <span className="inline-flex items-center justify-center w-5 h-5 mr-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-[10px] font-bold">{item.preorder_number}</span>
+                          : <span className="text-gray-400 font-normal text-xs mr-1">{index + 1}.</span>
+                        }
+                        {item.songs?.title ?? item.free_text_song_name}
+                        {item.free_text_song_name && (
+                          <span className="ml-1.5 text-amber-500" title="Bài hát chưa có trong hệ thống">⚠️</span>
+                        )}
+                        {item.songs?.author && <span className="ml-1.5 text-xs font-normal text-gray-400 dark:text-gray-500">{item.songs.author}</span>}
                       </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {item.singer_name}
+                        {item.booker_phone && (
+                          <a
+                            href={`tel:${item.booker_phone}`}
+                            onClick={e => e.stopPropagation()}
+                            className="ml-2 font-mono hover:text-blue-400 underline underline-offset-2"
+                          >{item.booker_phone}</a>
+                        )}
+                        {item.drinks?.length > 0 && (
+                          <span className="ml-2 text-blue-400">
+                            🥤 {item.drinks.map((d: string) => DRINK_LABELS[d] ?? d).join(", ")}
+                          </span>
+                        )}
+                        {item.video_url && (
+                          <a
+                            href={item.video_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            className="ml-2 text-green-500 hover:text-green-400"
+                            title="Xem video"
+                          >🎬</a>
+                        )}
+                        {item.want_facebook_post && (
+                          <span className="ml-1 text-blue-400" title="Khách yêu cầu đăng Facebook">📤</span>
+                        )}
+                      </div>
+                      {(item.actual_start || item.actual_end) && (
+                        <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                          {fmtTime(item.actual_start)}
+                          {item.actual_end && <> → {fmtTime(item.actual_end)}</>}
+                        </div>
+                      )}
+                    </div>
+                    {item.status === "playing" && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500 text-white" title="Đang diễn">● LIVE</span>
+                    )}
+                    {currentSongId === item.songs?.id && (
+                      <span className="text-blue-400 text-sm" title="Đang xem">👀</span>
                     )}
                   </div>
-                  {item.status === "playing" && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500 text-white" title="Đang diễn">● LIVE</span>
-                  )}
-                  {currentSongId === item.songs?.id && (
-                    <span className="text-blue-400 text-sm" title="Đang xem">👀</span>
-                  )}
-                  <span className="text-gray-400 dark:text-gray-500 text-xs">{isOpen ? "▲" : "▼"}</span>
-                </div>
-              </div>
-
-              {/* Action row */}
-              {isOpen && (
-                <div className="flex gap-2 px-1 pt-1 pb-2 flex-wrap">
-                  {(item.status === "waiting" || item.status === "done") && (
-                    <button
-                      onClick={() => {
-                        const playing = queue.find(i => i.status === "playing");
-                        if (playing) onStop(playing.id);
-                        onPlay(item.id, item.songs.id);
-                        if (htmlLyricId && onPresentHtml) onPresentHtml(htmlLyricId);
-                        setOpenMenuId(null);
-                      }}
-                      className="flex-1 py-2 rounded-lg text-sm font-semibold bg-green-600 hover:bg-green-500 text-white transition-colors"
-                    >
-                      Diễn
-                    </button>
-                  )}
-                  {item.status === "playing" && (
-                    <button
-                      onClick={() => { onStop(item.id); setOpenMenuId(null); }}
-                      className="flex-1 py-2 rounded-lg text-sm font-semibold bg-red-600 hover:bg-red-500 text-white transition-colors"
-                    >
-                      Dừng
-                    </button>
-                  )}
-                  <button
-                    onClick={() => { onViewSong(item.songs.id); setOpenMenuId(null); }}
-                    className="flex-1 py-2 rounded-lg text-sm font-medium bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-white transition-colors"
-                  >
-                    Xem trước
-                  </button>
-                  <button
-                    onClick={() => { setDeletingId(item.id); setOpenMenuId(null); }}
-                    className="flex-1 py-2 rounded-lg text-sm font-medium bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 text-red-700 dark:text-red-400 transition-colors"
-                  >
-                    Xoá
-                  </button>
+                }
+              >
+                {(item.status === "waiting" || item.status === "done") && (
                   <button
                     onClick={() => {
-                      setEditingItem({
-                        registration_id: item.id,
-                        session_id: item.session_id,
-                        song_id: item.songs?.id,
-                        song_title: item.songs?.title ?? item.free_text_song_name ?? "",
-                        song_author: item.songs?.author,
-                        drinks: item.drinks ?? [],
-                      });
+                      const playing = queue.find(i => i.status === "playing");
+                      if (playing) onStop(playing.id);
+                      onPlay(item.id, item.songs.id);
+                      if (htmlLyricId && onPresentHtml) onPresentHtml(htmlLyricId);
                       setOpenMenuId(null);
                     }}
-                    className="flex-1 py-2 rounded-lg text-sm font-medium bg-yellow-100 dark:bg-yellow-700/50 hover:bg-yellow-200 dark:hover:bg-yellow-700 text-yellow-800 dark:text-white transition-colors"
+                    className="flex-1 py-2 rounded-lg text-sm font-semibold bg-green-600 hover:bg-green-500 text-white transition-colors"
                   >
-                    Đổi bài
+                    Diễn
                   </button>
+                )}
+                {item.status === "playing" && (
                   <button
-                    onClick={() => { router.push(`/admin/songs/${item.songs.id}`); setOpenMenuId(null); }}
-                    className="flex-1 py-2 rounded-lg text-sm font-medium bg-purple-100 dark:bg-purple-800 hover:bg-purple-200 dark:hover:bg-purple-700 text-purple-800 dark:text-white transition-colors"
+                    onClick={() => { onStop(item.id); setOpenMenuId(null); }}
+                    className="flex-1 py-2 rounded-lg text-sm font-semibold bg-red-600 hover:bg-red-500 text-white transition-colors"
                   >
-                    Sửa bài
+                    Dừng
                   </button>
-                  <button
-                    onClick={() => handleCopyFB(item)}
-                    className="flex-1 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
-                  >
-                    {copiedId === item.id ? "✓ Đã copy!" : "📋 Copy FB"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setVideoInputId(videoInputId === item.id ? null : item.id);
-                      setVideoInputValue(item.video_url ?? "");
-                    }}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      item.video_url
-                        ? "bg-green-600 hover:bg-green-500 text-white"
-                        : "bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-white"
-                    }`}
-                  >
-                    🎬 Video
-                  </button>
-                </div>
-              )}
+                )}
+                <button
+                  onClick={() => { onViewSong(item.songs.id); setOpenMenuId(null); }}
+                  className="flex-1 py-2 rounded-lg text-sm font-medium bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-white transition-colors"
+                >
+                  Xem trước
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingItem({
+                      registration_id: item.id,
+                      session_id: item.session_id,
+                      song_id: item.songs?.id,
+                      song_title: item.songs?.title ?? item.free_text_song_name ?? "",
+                      song_author: item.songs?.author,
+                      drinks: item.drinks ?? [],
+                    });
+                    setOpenMenuId(null);
+                  }}
+                  className="flex-1 py-2 rounded-lg text-sm font-medium bg-yellow-100 dark:bg-yellow-700/50 hover:bg-yellow-200 dark:hover:bg-yellow-700 text-yellow-800 dark:text-white transition-colors"
+                >
+                  Đổi bài
+                </button>
+                <button
+                  onClick={() => { router.push(`/admin/songs/${item.songs.id}`); setOpenMenuId(null); }}
+                  className="flex-1 py-2 rounded-lg text-sm font-medium bg-purple-100 dark:bg-purple-800 hover:bg-purple-200 dark:hover:bg-purple-700 text-purple-800 dark:text-white transition-colors"
+                >
+                  Sửa bài
+                </button>
+                <button
+                  onClick={() => handleCopyFB(item)}
+                  className="flex-1 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                >
+                  {copiedId === item.id ? "✓ Đã copy!" : "📋 Copy FB"}
+                </button>
+                <button
+                  onClick={() => {
+                    setVideoInputId(videoInputId === item.id ? null : item.id);
+                    setVideoInputValue(item.video_url ?? "");
+                  }}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    item.video_url
+                      ? "bg-green-600 hover:bg-green-500 text-white"
+                      : "bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-white"
+                  }`}
+                >
+                  🎬 Video
+                </button>
+                <button
+                  onClick={() => { setDeletingId(item.id); setOpenMenuId(null); }}
+                  className="flex-1 py-2 rounded-lg text-sm font-medium bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 text-red-700 dark:text-red-400 transition-colors"
+                >
+                  Xoá
+                </button>
+              </AccordionRow>
               {isOpen && videoInputId === item.id && (
-                <div className="flex gap-2 px-1 pb-2">
+                <div className="flex gap-2 px-1 pb-2 mt-1">
                   <input
                     type="text"
                     value={videoInputValue}

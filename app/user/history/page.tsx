@@ -7,8 +7,11 @@ import Footer from "../../_components/Footer";
 import { styleToParams, DEFAULT_STYLE } from "../../_components/LyricHtmlPanel";
 import DeleteButton from "../../_components/DeleteButton";
 import EditRegistrationModal from "../../_components/EditRegistrationModal";
+import AccordionRow from "../../_components/AccordionRow";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
+
+type LyricOption = { id: string; source_lyric: string; composed_at?: string | null };
 
 type QueueItem = {
   registration_id: string;
@@ -18,6 +21,7 @@ type QueueItem = {
   slide_drive_url?: string;
   lyric_id?: string;
   lyrics_text?: string;
+  lyrics: LyricOption[];
   status: string;
   session_date: string;
   session_id: string;
@@ -28,6 +32,17 @@ type QueueItem = {
 };
 
 type UserSuggestion = { id: string; name: string; phone_zalo?: string };
+
+const SOURCE_LABELS: Record<string, string> = {
+  MANUAL: "Thủ công",
+  AI: "AI",
+  SHEET_SYNC: "Sheet Sync",
+};
+
+function lyricLabel(l: LyricOption, index: number) {
+  const year = l.composed_at ? new Date(l.composed_at).getFullYear() : null;
+  return `Phiên bản ${index + 1}`;
+}
 
 const STATUS_LABELS: Record<string, string> = {
   waiting: "Đang chờ",
@@ -49,6 +64,8 @@ function UserLyricContent() {
   const [error, setError] = useState("");
   const [editingItem, setEditingItem] = useState<QueueItem | null>(null);
   const [fbConfirmId, setFbConfirmId] = useState<string | null>(null);
+  const [openItemId, setOpenItemId] = useState<string | null>(null);
+  const [lyricPickerId, setLyricPickerId] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
     await fetch(`${API}/api/queue/registrations/${id}`, { method: "DELETE" });
@@ -192,86 +209,107 @@ function UserLyricContent() {
         ) : (
           <ul className="space-y-2">
             {items.map(item => (
-              <li
-                key={item.registration_id}
-                className="p-4 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-              >
-                <div className="flex items-center justify-between">
-                  <div
-                    onClick={() => item.lyric_id && window.open(`/live/lyric?lyric_id=${item.lyric_id}&${styleToParams(DEFAULT_STYLE)}`, "_blank")}
-                    className={`flex-1 min-w-0 ${item.lyric_id ? "cursor-pointer hover:opacity-80 transition-opacity" : "opacity-60"}`}
-                  >
-                    {item.order_number != null && (
-                      <p className="text-xs text-gray-400 mb-0.5">Số thứ tự: <span className="font-semibold tabular-nums text-gray-600 dark:text-gray-300">{item.order_number}</span></p>
-                    )}
-                    <p className="font-semibold text-gray-900 dark:text-white">{item.song_title}</p>
-                    {item.song_author && <p className="text-xs text-gray-400 mt-0.5">{item.song_author}</p>}
-                    <p className="text-xs text-gray-400 mt-1">{item.session_date}</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 ml-3 shrink-0">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      item.status === "performing" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400" :
-                      item.status === "done" ? "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400" :
-                      "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"
-                    }`}>
-                      {STATUS_LABELS[item.status] ?? item.status}
-                    </span>
-                    {item.lyric_id && (
+              <li key={item.registration_id}>
+                <AccordionRow
+                  isOpen={openItemId === item.registration_id}
+                  onToggle={() => setOpenItemId(prev => prev === item.registration_id ? null : item.registration_id)}
+                  highlight={item.status === "performing" ? "active" : item.status === "done" ? "dim" : "none"}
+                  summary={
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        {item.order_number != null && (
+                          <p className="text-xs text-gray-400 mb-0.5">Số thứ tự: <span className="font-semibold tabular-nums text-gray-600 dark:text-gray-300">{item.order_number}</span></p>
+                        )}
+                        <p className="font-semibold text-gray-900 dark:text-white truncate">{item.song_title}</p>
+                        {item.song_author && <p className="text-xs text-gray-400 mt-0.5 truncate">{item.song_author}</p>}
+                        <p className="text-xs text-gray-400 mt-1">{item.session_date}</p>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
+                        item.status === "performing" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400" :
+                        item.status === "done" ? "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400" :
+                        "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"
+                      }`}>
+                        {STATUS_LABELS[item.status] ?? item.status}
+                      </span>
+                    </div>
+                  }
+                >
+                  {item.lyrics.length === 1 && (
+                    <button
+                      type="button"
+                      onClick={() => window.open(`/live/lyric?lyric_id=${item.lyrics[0].id}&${styleToParams(DEFAULT_STYLE)}`, "_blank")}
+                      className="flex-1 py-2 rounded-lg text-sm font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors"
+                    >
+                      Xem lời →
+                    </button>
+                  )}
+                  {item.lyrics.length > 1 && (
+                    <div className="flex-1 flex flex-col gap-1">
                       <button
                         type="button"
-                        onClick={e => { e.stopPropagation(); window.open(`/live/lyric?lyric_id=${item.lyric_id}&${styleToParams(DEFAULT_STYLE)}`, "_blank"); }}
-                        className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors"
+                        onClick={() => setLyricPickerId(prev => prev === item.registration_id ? null : item.registration_id)}
+                        className="w-full py-2 rounded-lg text-sm font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors"
                       >
-                        Xem lời →
+                        Xem lời {lyricPickerId === item.registration_id ? "▲" : "▼"}
                       </button>
-                    )}
-                    {item.video_url && (
-                      <a
-                        href={item.video_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={e => e.stopPropagation()}
-                        className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors"
+                      {lyricPickerId === item.registration_id && (
+                        <div className="flex flex-col gap-1 pl-1">
+                          {item.lyrics.map((l, i) => (
+                            <button
+                              key={l.id}
+                              type="button"
+                              onClick={() => { window.open(`/live/lyric?lyric_id=${l.id}&${styleToParams(DEFAULT_STYLE)}`, "_blank"); setLyricPickerId(null); }}
+                              className="w-full py-1.5 px-3 rounded-lg text-xs font-medium text-left bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                            >
+                              {lyricLabel(l, i)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {item.video_url && (
+                    <a
+                      href={item.video_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 py-2 rounded-lg text-sm font-medium text-center bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors"
+                    >
+                      🎬 Xem video
+                    </a>
+                  )}
+                  {item.video_url && (
+                    item.want_facebook_post ? (
+                      <span className="flex-1 py-2 rounded-lg text-sm font-medium text-center bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                        📤 Đã yêu cầu đăng
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setFbConfirmId(item.registration_id)}
+                        className="flex-1 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
                       >
-                        🎬 Xem video ↗
-                      </a>
-                    )}
-                    {item.video_url && (
-                      item.want_facebook_post ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-500 dark:bg-blue-900/40 dark:text-blue-300">
-                          📤 Đã yêu cầu đăng
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={e => { e.stopPropagation(); setFbConfirmId(item.registration_id); }}
-                          className="text-xs px-2 py-0.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white transition-colors"
-                        >
-                          📤 Đăng Facebook
-                        </button>
-                      )
-                    )}
-                    {item.status !== "done" && (
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <button
-                          type="button"
-                          onClick={e => { e.stopPropagation(); setEditingItem(item); }}
-                          className="text-xs px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors"
-                          title="Chỉnh sửa đăng ký"
-                        >
-                          Chỉnh sửa
-                        </button>
-                        <span onClick={e => e.stopPropagation()}>
-                          <DeleteButton
-                            title="Xoá đăng ký?"
-                            onDelete={() => handleDelete(item.registration_id)}
-                            className="text-xs px-2 py-1 rounded bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
-                          />
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                        📤 Đăng Facebook
+                      </button>
+                    )
+                  )}
+                  {item.status !== "done" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setEditingItem(item)}
+                        className="flex-1 py-2 rounded-lg text-sm font-medium bg-yellow-100 dark:bg-yellow-700/40 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-700/60 transition-colors"
+                      >
+                        Chỉnh sửa
+                      </button>
+                      <DeleteButton
+                        title="Xoá đăng ký?"
+                        onDelete={() => handleDelete(item.registration_id)}
+                        className="flex-1 py-2 rounded-lg text-sm font-medium bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
+                      />
+                    </>
+                  )}
+                </AccordionRow>
               </li>
             ))}
           </ul>
