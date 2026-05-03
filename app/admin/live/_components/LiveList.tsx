@@ -265,6 +265,10 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
                       song_title: item.songs?.title ?? item.free_text_song_name ?? "",
                       song_author: item.songs?.author,
                       drinks: item.drinks ?? [],
+                      user_id: item.user_id ?? null,
+                      singer_name: item.singer_name,
+                      booker_phone: item.booker_phone,
+                      preorder_number: item.preorder_number ?? null,
                     });
                     setOpenMenuId(null);
                   }}
@@ -335,6 +339,7 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
       {editingItem && (
         <EditRegistrationModal
           item={editingItem}
+          isAdmin
           onClose={() => setEditingItem(null)}
           onSaved={() => { setEditingItem(null); onRefresh?.(); }}
         />

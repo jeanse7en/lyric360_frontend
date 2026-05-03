@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import SessionSelector from "./SessionSelector";
 import SongSearch from "./SongSearch";
 import DrinkSelector from "./DrinkSelector";
+import BookerInfo from "./BookerInfo";
+import PreorderNumberSelect from "./PreorderNumberSelect";
+import { fetchQueueLimit, fetchSessionBookingInfo } from "../_lib/registration_service";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -22,15 +25,21 @@ export type EditableRegistration = {
   song_title: string;
   song_author?: string;
   drinks: string[];
+  // admin-only
+  user_id?: string | null;
+  singer_name?: string;
+  booker_phone?: string;
+  preorder_number?: number | null;
 };
 
 type Props = {
   item: EditableRegistration;
   onClose: () => void;
   onSaved: () => void;
+  isAdmin?: boolean;
 };
 
-export default function EditRegistrationModal({ item, onClose, onSaved }: Props) {
+export default function EditRegistrationModal({ item, onClose, onSaved, isAdmin }: Props) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState(item.session_id);
   const [selectedSong, setSelectedSong] = useState<Song | null>(
@@ -38,6 +47,14 @@ export default function EditRegistrationModal({ item, onClose, onSaved }: Props)
   );
   const [freeTextSong, setFreeTextSong] = useState(item.song_id ? "" : item.song_title);
   const [drinks, setDrinks] = useState<string[]>(item.drinks ?? []);
+  // admin booker fields
+  const [bookerName, setBookerName] = useState(item.singer_name ?? "");
+  const [singerName, setSingerName] = useState(item.singer_name ?? "");
+  const [bookerPhone, setBookerPhone] = useState(item.booker_phone ?? "");
+  const [userId, setUserId] = useState<string | null>(item.user_id ?? null);
+  const [preorderNumber, setPreorderNumber] = useState<number | null>(item.preorder_number ?? null);
+  const [queueLimit, setQueueLimit] = useState(30);
+  const [takenNumbers, setTakenNumbers] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [modalError, setModalError] = useState("");
 
@@ -57,6 +74,18 @@ export default function EditRegistrationModal({ item, onClose, onSaved }: Props)
       .catch(() => setModalError("Không thể tải danh sách đêm diễn"));
   }, [item.session_id]);
 
+  useEffect(() => {
+    if (!isAdmin) return;
+    Promise.all([
+      fetchQueueLimit(),
+      fetchSessionBookingInfo(selectedSessionId),
+    ]).then(([limit, info]) => {
+      setQueueLimit(limit);
+      // Exclude the current registration's own slot so it doesn't appear as taken
+      setTakenNumbers(info.taken_preorder_numbers.filter(n => n !== item.preorder_number));
+    });
+  }, [isAdmin, selectedSessionId, item.preorder_number]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -68,6 +97,13 @@ export default function EditRegistrationModal({ item, onClose, onSaved }: Props)
         body.song_id = selectedSong.id;
       } else if (freeTextSong.trim()) {
         body.free_text_song_name = freeTextSong.trim();
+      }
+
+      if (isAdmin) {
+        body.user_id = userId ?? null;
+        body.singer_name = singerName.trim() || bookerName.trim();
+        body.booker_phone = bookerPhone.trim() || null;
+        body.preorder_number = preorderNumber;
       }
 
       const res = await fetch(`${API}/api/queue/registrations/${item.registration_id}`, {
@@ -106,6 +142,27 @@ export default function EditRegistrationModal({ item, onClose, onSaved }: Props)
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          {isAdmin && (
+            <>
+              <BookerInfo
+                bookerName={bookerName}
+                singerName={singerName}
+                phone={bookerPhone}
+                onBookerNameChange={setBookerName}
+                onSingerNameChange={setSingerName}
+                onPhoneChange={setBookerPhone}
+                onUserIdChange={setUserId}
+                skipLocalStorage
+              />
+              <PreorderNumberSelect
+                value={preorderNumber}
+                onChange={setPreorderNumber}
+                queueLimit={queueLimit}
+                takenNumbers={takenNumbers}
+              />
+            </>
+          )}
+
           <SessionSelector
             sessions={sessions}
             selectedId={selectedSessionId}

@@ -11,6 +11,7 @@ type Props = {
   onSingerNameChange: (v: string) => void;
   onPhoneChange: (v: string) => void;
   onUserIdChange: (id: string | null) => void;
+  skipLocalStorage?: boolean;
 };
 
 const inputCls = "w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none";
@@ -18,7 +19,7 @@ const inputCls = "w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-
 const namesMatch = (a: string, b: string) =>
   a.trim().toLowerCase() === b.trim().toLowerCase();
 
-export default function BookerInfo({ bookerName, singerName, phone, onBookerNameChange, onSingerNameChange, onPhoneChange, onUserIdChange }: Props) {
+export default function BookerInfo({ bookerName, singerName, phone, onBookerNameChange, onSingerNameChange, onPhoneChange, onUserIdChange, skipLocalStorage }: Props) {
   const [nameSuggestions, setNameSuggestions] = useState<User[]>([]);
   const [showNameDropdown, setShowNameDropdown] = useState(false);
   const [phoneSuggestions, setPhoneSuggestions] = useState<User[]>([]);
@@ -57,12 +58,13 @@ export default function BookerInfo({ bookerName, singerName, phone, onBookerName
     setPhoneConflict(null);
   }, [bookForOther, onBookerNameChange, onSingerNameChange, onPhoneChange, onUserIdChange]);
 
-  // Auto-load user from localStorage on mount
+  // Auto-load user from localStorage on mount (skipped in edit contexts)
   useEffect(() => {
+    if (skipLocalStorage) return;
     const storedId = localStorage.getItem("lyric360_user_id");
     if (!storedId) return;
     getUser(storedId).then(user => { if (user?.name) selectUser(user); }).catch(() => {});
-  }, [selectUser]);
+  }, [selectUser, skipLocalStorage]);
 
   // Keep setCustomValidity in sync with phoneConflict
   useEffect(() => {
