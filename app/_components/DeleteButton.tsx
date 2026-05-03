@@ -41,7 +41,7 @@ export default function DeleteButton({ onDelete, title = "Xoá?", className }: P
       className={className ?? "text-gray-400 hover:text-red-500 transition-colors"}
       title="Xoá"
     >
-      🗑
+      Xóa
     </button>
   );
 }

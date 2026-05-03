@@ -86,11 +86,6 @@ function MobileRegistrationInner() {
     });
   }, [selectedSessionId, userId]);
 
-  // Auto-select smallest available preorder slot whenever session / taken slots change
-  useEffect(() => {
-    const firstAvailable = Array.from({ length: queueLimit }, (_, i) => i + 1).find(n => !takenPreorderNumbers.includes(n));
-    setPreorderNumber(firstAvailable ?? null);
-  }, [takenPreorderNumbers, queueLimit]);
 
   const selectedSession = sessions.find((s) => s.id === selectedSessionId);
   const queueFull = !!selectedSession && selectedSession.order_count >= queueLimit;
@@ -170,6 +165,7 @@ function MobileRegistrationInner() {
                 onChange={e => setPreorderNumber(e.target.value ? Number(e.target.value) : null)}
                 className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
+                <option value="">Tự động</option>
                 {Array.from({ length: queueLimit }, (_, i) => i + 1).map((n) => {
                   const taken = takenPreorderNumbers.includes(n);
                   return (
