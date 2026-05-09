@@ -10,6 +10,7 @@ type Session = {
   session_date: string;
   status: string;
   is_private: boolean;
+  album_url?: string | null;
   started_at?: string;
   ended_at?: string;
   order_count: number;
@@ -24,16 +25,19 @@ type Props = {
   onDelete: (id: string) => void;
   onEdit: (session: Session) => void;
   onQR: (session: Session) => void;
-  onLinkPhotos: (id: string) => void;
+  onAlbumSaved?: (albumUrl: string | null) => void;
 };
 
-export default function SessionActionMenu({ session, onStart, onStop, onDelete, onEdit, onQR, onLinkPhotos }: Props) {
+const API = process.env.NEXT_PUBLIC_API_URL;
+
+export default function SessionActionMenu({ session, onStart, onStop, onDelete, onEdit, onQR, onAlbumSaved }: Props) {
   const router = useRouter();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [startConfirm, setStartConfirm] = useState(false);
   const [stopConfirm, setStopConfirm] = useState(false);
-  const [linking, setLinking] = useState(false);
-  const [linkResult, setLinkResult] = useState<string | null>(null);
+  const [albumInputOpen, setAlbumInputOpen] = useState(false);
+  const [albumInputValue, setAlbumInputValue] = useState(session.album_url ?? "");
+  const [savingAlbum, setSavingAlbum] = useState(false);
   return (
     <div className="mt-3 pt-3 border-t border-gray-700 space-y-2">
       {/* Stats row */}
@@ -96,25 +100,15 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
           QR đăng ký
         </button>
         <button
-          disabled={linking}
-          onClick={async () => {
-            setLinking(true);
-            setLinkResult(null);
-            try {
-              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/sessions/${session.id}/link-photos-videos`, { method: "POST" });
-              const d = await res.json();
-              if (res.ok) setLinkResult(`✓ Đã link ${d.linked} video (${d.skipped} bỏ qua)`);
-              else setLinkResult(`✗ ${d.detail ?? "Lỗi"}`);
-            } catch { setLinkResult("✗ Không thể kết nối"); }
-            finally { setLinking(false); }
-          }}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50"
+          onClick={() => { setAlbumInputOpen(v => !v); setAlbumInputValue(session.album_url ?? ""); }}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            session.album_url
+              ? "bg-purple-600 hover:bg-purple-500 text-white"
+              : "bg-gray-700 hover:bg-gray-600 text-white"
+          }`}
         >
-          {linking ? "⏳..." : "📷 Link Photos"}
+          📷 Album
         </button>
-        {linkResult && (
-          <span className="text-xs text-gray-300 self-center">{linkResult}</span>
-        )}
         <button
           onClick={() => onEdit(session)}
           className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-white transition-colors"
@@ -128,6 +122,45 @@ export default function SessionActionMenu({ session, onStart, onStop, onDelete, 
           Xóa
         </button>
       </div>
+
+      {albumInputOpen && (
+        <div className="flex gap-2 mt-2">
+          <input
+            type="text"
+            value={albumInputValue}
+            onChange={e => setAlbumInputValue(e.target.value)}
+            placeholder="Nhập link album ảnh..."
+            className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+          />
+          <button
+            disabled={savingAlbum}
+            onClick={async () => {
+              setSavingAlbum(true);
+              try {
+                const url = albumInputValue.trim() || null;
+                await fetch(`${API}/api/sessions/${session.id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ album_url: url }),
+                });
+                onAlbumSaved?.(url);
+                setAlbumInputOpen(false);
+              } finally {
+                setSavingAlbum(false);
+              }
+            }}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-600 hover:bg-purple-500 text-white transition-colors disabled:opacity-50"
+          >
+            {savingAlbum ? "..." : "Lưu"}
+          </button>
+          <button
+            onClick={() => setAlbumInputOpen(false)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-600 hover:bg-gray-500 text-white transition-colors"
+          >
+            Hủy
+          </button>
+        </div>
+      )}
 
       {startConfirm && (
         <ConfirmModal

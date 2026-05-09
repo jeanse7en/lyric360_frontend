@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
+import Button from "../../../_components/Button";
 
 type Props = {
   url: string;
@@ -40,18 +41,15 @@ export default function QRModal({ url, title, onClose }: Props) {
         </div>
         <p className="text-xs text-gray-400 dark:text-gray-500 break-all text-center mb-4 font-mono">{url}</p>
         <div className="flex gap-2">
-          <button
-            onClick={handleCopy}
-            className="flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
-          >
+          <Button onClick={handleCopy} className="flex-1">
             {copied ? "✓ Đã copy!" : "Copy link"}
-          </button>
-          <button
-            onClick={onClose}
-            className="px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-colors"
-          >
+          </Button>
+          <Button href={url} target="_blank" rel="noopener noreferrer" variant="secondary">
+            Mở tab mới ↗
+          </Button>
+          <Button onClick={onClose} variant="secondary">
             Đóng
-          </button>
+          </Button>
         </div>
       </div>
     </div>

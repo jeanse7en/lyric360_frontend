@@ -104,6 +104,7 @@ export default function LiveLyricDashboard() {
         {/* Desktop sidebar */}
         <div className="hidden md:block md:w-1/3 shrink-0">
           <LiveList
+            sessionId={sessionId}
             queue={queue}
             onPlay={handlePlay}
             onStop={handleStop}
@@ -117,6 +118,7 @@ export default function LiveLyricDashboard() {
           <div className="md:hidden fixed inset-0 z-40 flex">
             <div className="w-80 max-w-[85vw] h-full overflow-y-auto bg-white dark:bg-gray-900 shadow-2xl">
               <LiveList
+                sessionId={sessionId}
                 queue={queue}
                 onPlay={handlePlay}
                 onStop={handleStop}

@@ -7,6 +7,7 @@ import EditRegistrationModal, { type EditableRegistration } from "../../../_comp
 import ConfirmModal from "../../../_components/ConfirmModal";
 import { fetchSetting } from "../../../_lib/settings_service";
 import AccordionRow from "../../../_components/AccordionRow";
+import AddSongModal from "./AddSongModal";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -19,6 +20,7 @@ type NoteDialogState = {
 };
 
 type Props = {
+  sessionId: string;
   queue: any[];
   currentSongId?: string | null;
   sessionStartedAt?: string | null;
@@ -51,7 +53,7 @@ function formatSessionDate(dateStr: string | null | undefined): string {
   return `${day}-${month}-${year}`;
 }
 
-export default function LiveList({ queue, currentSongId, sessionStartedAt, sessionDate, onPlay, onStop, onViewSong, onOpenNote, onPresent, onPresentHtml, onRefresh }: Props) {
+export default function LiveList({ sessionId, queue, currentSongId, sessionStartedAt, sessionDate, onPlay, onStop, onViewSong, onOpenNote, onPresent, onPresentHtml, onRefresh }: Props) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [editingItem, setEditingItem] = useState<EditableRegistration | null>(null);
@@ -61,6 +63,7 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
   const [sortBy, setSortBy] = useState<"created_at" | "actual_start">("created_at");
   const [videoInputId, setVideoInputId] = useState<string | null>(null);
   const [videoInputValue, setVideoInputValue] = useState("");
+  const [addSongOpen, setAddSongOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -141,6 +144,11 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
           >
             {sortBy === "actual_start" ? "⏱ Giờ diễn" : "📋 Đăng ký"}
           </button>
+          <button
+            onClick={() => setAddSongOpen(true)}
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-700 dark:text-green-300 transition-colors text-base font-bold"
+            title="Thêm bài hát (admin)"
+          >+</button>
           {onRefresh && (
             <button
               onClick={handleRefresh}
@@ -352,6 +360,13 @@ export default function LiveList({ queue, currentSongId, sessionStartedAt, sessi
           confirmClassName="px-4 py-2 rounded-lg text-sm bg-red-600 hover:bg-red-500 text-white transition-colors"
           onConfirm={() => handleDelete(deletingId)}
           onCancel={() => setDeletingId(null)}
+        />
+      )}
+      {addSongOpen && (
+        <AddSongModal
+          sessionId={sessionId}
+          onClose={() => setAddSongOpen(false)}
+          onAdded={() => { setAddSongOpen(false); onRefresh?.(); }}
         />
       )}
     </div>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import Header from "../../_components/Header";
 import Footer from "../../_components/Footer";
 import BookerInfo from "../../_components/BookerInfo";
@@ -22,6 +21,9 @@ import {
   type Song,
   type UserExistingReg,
 } from "../../_lib/registration_service";
+import SubmitButton from "../../_components/SubmitButton";
+import ExistingRegWarning from "./_components/ExistingRegWarning";
+import QueueFullBanner from "./_components/QueueFullBanner";
 import SuccessScreen from "./_components/SuccessScreen";
 
 type SuccessInfo = { orderNumber: number; userId: string };
@@ -165,24 +167,10 @@ function MobileRegistrationInner() {
             />
             <SessionSelector sessions={sessions} selectedId={selectedSessionId} onChange={setSelectedSessionId} />
 
-            {queueFull && (
-              <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-300 text-sm">
-                <span className="text-lg">🚫</span>
-                <span>Đã đủ số lượng đăng ký.</span>
-              </div>
-            )}
+            {queueFull && <QueueFullBanner />}
 
             {!queueFull && !allowDuplicate && userExistingReg && (
-              <Link
-                href={`/user/history?user_id=${userId}`}
-                className="flex items-center gap-2 px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-sm hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
-              >
-                <span className="text-lg">⚠️</span>
-                <span>
-                  Bạn đã đăng ký <strong>{userExistingReg.song_title}</strong> trong đêm diễn này.
-                  Click để đi đến bài hát đó.
-                </span>
-              </Link>
+              <ExistingRegWarning songTitle={userExistingReg.song_title} userId={userId} />
             )}
 
             {!queueFull && (allowDuplicate || !userExistingReg) && (
@@ -197,14 +185,12 @@ function MobileRegistrationInner() {
                 />
                 <ToneInput value={tone} onChange={setTone} />
                 <DrinkSelector selected={selectedDrinks} onChange={setSelectedDrinks} />
-                <button
-                  suppressHydrationWarning
-                  type="submit"
-                  disabled={submitting || !songSearchReady}
-                  className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-60"
-                >
-                  {submitting ? "Đang gửi..." : "Gửi Đăng Ký"}
-                </button>
+                <SubmitButton
+                  submitting={submitting}
+                  disabled={!songSearchReady}
+                  label="Gửi Đăng Ký"
+                  loadingLabel="Đang gửi..."
+                />
               </>
             )}
           </form>

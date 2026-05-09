@@ -29,6 +29,7 @@ type QueueItem = {
   video_url?: string | null;
   want_facebook_post?: boolean;
   order_number?: number | null;
+  album_url?: string | null;
 };
 
 type UserSuggestion = { id: string; name: string; phone_zalo?: string };
@@ -276,6 +277,16 @@ function UserLyricContent() {
                       className="flex-1 py-2 rounded-lg text-sm font-medium text-center bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors"
                     >
                       🎬 Xem video
+                    </a>
+                  )}
+                  {item.album_url && (
+                    <a
+                      href={item.album_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 py-2 rounded-lg text-sm font-medium text-center bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/60 transition-colors"
+                    >
+                      📷 Xem album
                     </a>
                   )}
                   {item.video_url && (

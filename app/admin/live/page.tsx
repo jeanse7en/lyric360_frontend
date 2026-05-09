@@ -12,6 +12,7 @@ type Session = {
   session_date: string;
   status: string;
   is_private: boolean;
+  album_url?: string | null;
   started_at?: string;
   ended_at?: string;
   order_count: number;
@@ -220,7 +221,7 @@ export default function SessionsPage() {
                     onDelete={handleDelete}
                     onEdit={s => setEditState({ id: s.id, name: s.name ?? "", date: s.session_date, is_private: s.is_private })}
                     onQR={s => setQrSession(s)}
-                    onLinkPhotos={() => {}}
+                    onAlbumSaved={url => setSessions(prev => prev.map(s => s.id === session.id ? { ...s, album_url: url } : s))}
                   />
                 </div>
               )}
