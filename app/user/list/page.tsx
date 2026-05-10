@@ -19,6 +19,8 @@ type QueueRow = {
   preorder_number?: number | null;
 };
 
+type Session = { id: string; session_date: string; status: string; name?: string | null };
+
 const STATUS_LABEL: Record<string, string> = {
   waiting: "Chờ",
   playing: "Đang hát",
@@ -97,37 +99,39 @@ const columns: Column<QueueRow>[] = [
 
 export default function SchedulePage() {
   const [queue, setQueue] = useState<QueueRow[]>([]);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${API}/api/sessions/today`)
-      .then(r => (r.ok ? r.json() : null))
-      .then(data => {
-        if (!data) { setError("Không có buổi diễn nào hôm nay."); setLoading(false); return; }
-        setSessionId(data.id);
+    fetch(`${API}/api/sessions/available`)
+      .then(r => (r.ok ? r.json() : []))
+      .then((data: Session[]) => {
+        if (!data.length) { setError("Không có buổi diễn nào sắp tới."); setLoading(false); return; }
+        setSession(data[0]);
       })
       .catch(() => { setError("Không thể tải dữ liệu."); setLoading(false); });
   }, []);
 
   useEffect(() => {
-    if (!sessionId) return;
+    if (!session) return;
     const fetchQueue = () =>
-      fetch(`${API}/api/sessions/${sessionId}/queue`)
+      fetch(`${API}/api/sessions/${session.id}/queue`)
         .then(r => (r.ok ? r.json() : []))
         .then((data: QueueRow[]) => { setQueue(data); setLoading(false); })
         .catch(() => setLoading(false));
     fetchQueue();
     const interval = setInterval(fetchQueue, 15000);
     return () => clearInterval(interval);
-  }, [sessionId]);
+  }, [session]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header hideNav />
       <main className="w-full px-2 sm:px-4 py-6">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-4 px-2">🎵 Lịch diễn hôm nay</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-4 px-2">
+          🎵 {session?.name ?? (session ? `Buổi diễn ${session.session_date.split("-").reverse().join("/")}` : "Lịch diễn")}
+        </h1>
 
         {loading && <p className="text-center text-gray-400 py-16">Đang tải...</p>}
         {error && <p className="text-center text-gray-400 py-16">{error}</p>}
