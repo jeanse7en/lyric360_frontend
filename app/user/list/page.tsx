@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Header from "../../_components/Header";
 import DataTable, { type Column } from "../../_components/DataTable";
+import { maskPhone } from "../../_lib/format";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -68,7 +69,7 @@ const columns: Column<QueueRow>[] = [
     header: "Số điện thoại",
     headerClassName: "hidden md:table-cell",
     cellClassName: "hidden md:table-cell text-gray-500 dark:text-gray-400 font-mono text-xs",
-    cell: row => row.booker_phone ?? "—",
+    cell: row => row.booker_phone ? maskPhone(row.booker_phone) : "—",
   },
   {
     key: "status",

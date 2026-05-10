@@ -6,6 +6,7 @@ import Footer from "../../_components/Footer";
 import DataTable, { type Column } from "../../_components/DataTable";
 import DeleteConfirmModal from "../../_components/DeleteConfirmModal";
 import { listUsers, updateUser, deleteUser, type User } from "../../_lib/users_service";
+import { maskPhone } from "../../_lib/format";
 
 function EditUserModal({
   user,
@@ -197,7 +198,7 @@ export default function UsersPage() {
             href={`tel:${u.phone_zalo}`}
             className="text-blue-500 hover:underline"
           >
-            {u.phone_zalo}
+            {maskPhone(u.phone_zalo)}
           </a>
         ) : (
           <span className="text-gray-300 dark:text-gray-600">—</span>

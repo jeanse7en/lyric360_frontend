@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fmtTime, fmtDateTime } from "../../../../lib/format";
+import { maskPhone } from "../../../_lib/format";
 import EditRegistrationModal, { type EditableRegistration } from "../../../_components/EditRegistrationModal";
 import ConfirmModal from "../../../_components/ConfirmModal";
 import { fetchSetting } from "../../../_lib/settings_service";
@@ -199,7 +200,7 @@ export default function LiveList({ sessionId, queue, currentSongId, sessionStart
                             href={`tel:${item.booker_phone}`}
                             onClick={e => e.stopPropagation()}
                             className="ml-2 font-mono hover:text-blue-400 underline underline-offset-2"
-                          >{item.booker_phone}</a>
+                          >{maskPhone(item.booker_phone)}</a>
                         )}
                         {item.drinks?.length > 0 && (
                           <span className="ml-2 text-blue-400">
