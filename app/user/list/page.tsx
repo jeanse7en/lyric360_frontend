@@ -130,7 +130,9 @@ export default function SchedulePage() {
       <Header hideNav />
       <main className="w-full px-2 sm:px-4 py-6">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-4 px-2">
-          🎵 {session?.name ?? (session ? `Buổi diễn ${session.session_date.split("-").reverse().join("/")}` : "Lịch diễn")}
+          🎵 {session?.name ?? "Lịch diễn"}
+          {session && <span className="ml-2 text-sm font-normal text-gray-400 dark:text-gray-500">{session.session_date.split("-").reverse().join("/")}</span>}
+          {!loading && <span className="ml-2 text-sm font-normal text-gray-400 dark:text-gray-500">· {queue.length} bài</span>}
         </h1>
 
         {loading && <p className="text-center text-gray-400 py-16">Đang tải...</p>}
