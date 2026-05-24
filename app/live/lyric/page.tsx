@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { paramsToStyle, DEFAULT_STYLE, type LyricHtmlStyle } from "../../_components/LyricHtmlPanel";
+import { paramsToStyle, type LyricHtmlStyle } from "../../_components/LyricHtmlPanel";
 import LyricDisplay from "./_components/LyricDisplay";
 
+// Supabase client kept only for broadcast channel (no DB queries)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
+const API = process.env.NEXT_PUBLIC_API_URL;
 
 type LyricConfig = {
   lyricId: string;
@@ -22,7 +25,6 @@ type LyricConfig = {
  *  Returns null if it's an external URL (Google Slides etc.) */
 function parseLyricUrl(url: string): { lyricId: string; style: LyricHtmlStyle } | null {
   try {
-    // Handle both absolute and relative forms
     const search = url.includes("?") ? url.split("?")[1] : "";
     const params = new URLSearchParams(search);
     const lyricId = params.get("lyric_id");
@@ -34,25 +36,16 @@ function parseLyricUrl(url: string): { lyricId: string; style: LyricHtmlStyle } 
 }
 
 async function fetchLyricById(lyricId: string): Promise<{ text: string; title: string; author?: string | null } | null> {
-  const { data } = await supabase
-    .from("song_lyrics")
-    .select("lyrics, songs(title, author)")
-    .eq("id", lyricId)
-    .maybeSingle();
-  if (!data) return null;
-  const song = Array.isArray(data.songs) ? data.songs[0] : data.songs;
-  return {
-    text: (data as any).lyrics ?? "",
-    title: (song as any)?.title ?? "",
-    author: (song as any)?.author ?? null,
-  };
+  const res = await fetch(`${API}/api/songs/lyrics/${lyricId}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  return { text: data.lyrics ?? "", title: data.title ?? "", author: data.author ?? null };
 }
 
 export default function LiveLyricPage() {
   const [config, setConfig] = useState<LyricConfig | null>(null);
   const [externalUrl, setExternalUrl] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-
 
   // Load from URL params (direct open / fullscreen preview) or from DB
   useEffect(() => {
@@ -70,14 +63,10 @@ export default function LiveLyricPage() {
         }
       }
 
-      // 2. TV live mode — read from DB + subscribe to Realtime
-      const { data: session } = await supabase
-        .from("live_sessions")
-        .select("id, presenting_lyric_url")
-        .eq("status", "live")
-        .maybeSingle();
-
-      if (!session) { setReady(true); return; }
+      // 2. TV live mode — read live session from API + subscribe to broadcast
+      const res = await fetch(`${API}/api/sessions/live`);
+      if (!res.ok) { setReady(true); return; }
+      const session = await res.json();
 
       const applyUrl = async (url: string) => {
         const parsed = parseLyricUrl(url);

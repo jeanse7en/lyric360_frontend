@@ -1,89 +1,95 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
 import LiveList from "../../_components/LiveList";
 import LyricPanel from "../../../../_components/LyricPanel";
 import NoteDialog from "../../_components/NoteDialog";
 import HopAmVietPanel from "./_components/HopAmVietPanel";
 import { styleToParams, type LyricHtmlStyle } from "../../../../_components/LyricHtmlPanel";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import {
+  fetchSessionQueue,
+  playQueueItem,
+  updateSessionPresenting,
+  fetchSongDetail,
+  type QueueItem,
+} from "../../../../_lib/session_service";
+import { stopQueueRegistration, saveRegistrationNote } from "../../../../_lib/registration_service";
+import { broadcastPresent } from "../../../../_lib/supabase_service";
 
 export default function LiveLyricDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
 
-  const [queue, setQueue] = useState<any[]>([]);
+  const [queue, setQueue] = useState<QueueItem[]>([]);
   const [currentSongId, setCurrentSongId] = useState<string | null>(null);
+  const [currentSongDetail, setCurrentSongDetail] = useState<{ title?: string; lyrics?: unknown[] } | null>(null);
   const [noteDialog, setNoteDialog] = useState({ isOpen: false, queueId: "", tone: "", note: "", rating: 5 });
   const [queueOpen, setQueueOpen] = useState(false);
+  const currentSongIdRef = useRef<string | null>(null);
+  useEffect(() => { currentSongIdRef.current = currentSongId; });
 
   const fetchQueue = async () => {
-    const { data } = await supabase
-      .from("queue_registrations")
-      .select(`id, singer_name, booker_phone, table_position, status, actual_tone, note, rating, created_at,
-        songs ( id, title, author, song_sheets ( id, sheet_drive_url, tone_male, tone_female, verified_at ), song_lyrics ( id, lyrics, slide_drive_url, source_lyric, verified_at ) )`)
-      .eq("session_id", sessionId)
-      .order("created_at", { ascending: true });
-
-    setQueue(data || []);
-
-    const playingSong = (data as any[])?.find((item) => item.status === "playing");
-    if (playingSong && !currentSongId) setCurrentSongId(playingSong.songs.id);
+    const data = await fetchSessionQueue(sessionId);
+    setQueue(data);
+    const playingSong = data.find((item) => item.status === "playing");
+    if (playingSong && !currentSongIdRef.current) setCurrentSongId(playingSong.songs?.id ?? null);
   };
 
   useEffect(() => {
     if (!sessionId) return;
-    fetchQueue();
-    const channel = supabase
-      .channel(`queue_lyric_${sessionId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "queue_registrations", filter: `session_id=eq.${sessionId}` }, fetchQueue)
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const poll = async () => {
+      const data = await fetchSessionQueue(sessionId);
+      setQueue(data);
+      const playingSong = data.find((item) => item.status === "playing");
+      if (playingSong && !currentSongIdRef.current) setCurrentSongId(playingSong.songs?.id ?? null);
+    };
+    void poll();
+    const interval = setInterval(() => void poll(), 4000);
+    return () => clearInterval(interval);
   }, [sessionId]);
 
+  useEffect(() => {
+    const load = async () => {
+      if (!currentSongId) {
+        setCurrentSongDetail(null);
+        return;
+      }
+      const data = await fetchSongDetail(currentSongId);
+      setCurrentSongDetail(data);
+    };
+    void load();
+  }, [currentSongId]);
+
   const handlePlay = async (queueId: string, songId: string) => {
-    await supabase.from("queue_registrations").update({ status: "done" }).eq("status", "playing").eq("session_id", sessionId);
-    await supabase.from("queue_registrations").update({ status: "playing", actual_start: new Date().toISOString() }).eq("id", queueId);
+    await playQueueItem(sessionId, queueId);
     setCurrentSongId(songId);
   };
 
   const handleStop = async (queueId: string) => {
-    await supabase.from("queue_registrations").update({ status: "done", actual_end: new Date().toISOString() }).eq("id", queueId);
+    await stopQueueRegistration(queueId);
     const next = queue.find((item) => item.status === "waiting" && item.id !== queueId);
-    if (next) setCurrentSongId(next.songs.id);
+    if (next) setCurrentSongId(next.songs?.id ?? null);
   };
 
   const handleViewSong = (songId: string) => setCurrentSongId(songId);
 
   const handlePresent = async (url: string) => {
-    await supabase.from("live_sessions").update({ presenting_lyric_url: url }).eq("id", sessionId);
-    await supabase.channel(`lyric_present_${sessionId}`).send({
-      type: "broadcast",
-      event: "present",
-      payload: { url },
-    });
+    await updateSessionPresenting(sessionId, url);
+    broadcastPresent(sessionId, url);
   };
 
   const handlePresentConfig = async (lyricId: string, style: LyricHtmlStyle) => {
     const url = `/live/lyric?lyric_id=${lyricId}&${styleToParams(style)}`;
-    await supabase.from("live_sessions").update({ presenting_lyric_url: url }).eq("id", sessionId);
-    await supabase.channel(`lyric_present_${sessionId}`).send({
-      type: "broadcast",
-      event: "present",
-      payload: { url },
-    });
+    await updateSessionPresenting(sessionId, url);
+    broadcastPresent(sessionId, url);
   };
 
   const saveNote = async () => {
-    await supabase
-      .from("queue_registrations")
-      .update({ actual_tone: noteDialog.tone, note: noteDialog.note, rating: noteDialog.rating })
-      .eq("id", noteDialog.queueId);
+    await saveRegistrationNote(noteDialog.queueId, {
+      actual_tone: noteDialog.tone,
+      note: noteDialog.note,
+      rating: noteDialog.rating,
+    });
     setNoteDialog({ ...noteDialog, isOpen: false });
     fetchQueue();
   };
@@ -93,8 +99,8 @@ export default function LiveLyricDashboard() {
     setQueueOpen(false);
   };
 
-  const currentSong = queue.find((q) => q.songs?.id === currentSongId)?.songs;
-  const lyrics = currentSong?.song_lyrics ?? [];
+  const lyrics = currentSongDetail?.lyrics ?? [];
+  const currentSongTitle = queue.find((q) => q.songs?.id === currentSongId)?.songs?.title ?? currentSongDetail?.title ?? "";
   const waitingCount = queue.filter((q) => q.status === "waiting").length;
 
   return (
@@ -140,7 +146,7 @@ export default function LiveLyricDashboard() {
             hasSong={!!currentSongId}
           />
           <HopAmVietPanel
-            songTitle={currentSong?.title ?? ""}
+            songTitle={currentSongTitle}
             onPresent={handlePresent}
           />
         </div>

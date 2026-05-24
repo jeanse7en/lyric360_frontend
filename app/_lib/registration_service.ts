@@ -48,7 +48,7 @@ export async function fetchSessionById(id: string): Promise<Session | null> {
 export async function fetchUserRecentSongs(userId: string): Promise<Song[]> {
   const res = await fetch(`${API}/api/queue/user/${userId}`);
   if (!res.ok) return [];
-  const items: any[] = await res.json();
+  const items: { song_id: string; song_title: string; song_author?: string }[] = await res.json();
   const seen = new Set<string>();
   const unique: Song[] = [];
   for (const item of items) {
@@ -73,6 +73,20 @@ export async function fetchSessionBookingInfo(
     user_registration: data.user_registration ?? null,
     taken_preorder_numbers: data.taken_preorder_numbers ?? [],
   };
+}
+
+export async function stopQueueRegistration(queueId: string): Promise<void> {
+  await fetch(`${API}/api/queue/registrations/${queueId}/stop`, { method: "POST" });
+}
+
+export type QueueNotePayload = { actual_tone?: string; note?: string; rating?: number };
+
+export async function saveRegistrationNote(queueId: string, data: QueueNotePayload): Promise<void> {
+  await fetch(`${API}/api/queue/registrations/${queueId}/note`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
 }
 
 export async function submitRegistration(

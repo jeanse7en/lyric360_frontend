@@ -1,117 +1,126 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
 import LiveList from "../_components/LiveList";
 import { styleToParams, DEFAULT_STYLE, type LyricHtmlStyle } from "../../../_components/LyricHtmlPanel";
 import SheetPanel from "../../../_components/SheetPanel";
 import LyricPanel from "../../../_components/LyricPanel";
 import NoteDialog from "../_components/NoteDialog";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-const API = process.env.NEXT_PUBLIC_API_URL;
+import {
+  fetchSessionInfo,
+  fetchSessionQueue,
+  playQueueItem,
+  updateSessionPresenting,
+  fetchSongDetail,
+  type QueueItem,
+} from "../../../_lib/session_service";
+import { stopQueueRegistration, saveRegistrationNote } from "../../../_lib/registration_service";
+import { broadcastPresent } from "../../../_lib/supabase_service";
 
 export default function LiveDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
 
-  const [queue, setQueue] = useState<any[]>([]);
+  const [queue, setQueue] = useState<QueueItem[]>([]);
   const [currentSongId, setCurrentSongId] = useState<string | null>(null);
-  const [noteDialog, setNoteDialog] = useState({ isOpen: false, queueId: '', tone: '', note: '', rating: 5 });
+  const [currentSongDetail, setCurrentSongDetail] = useState<{ title?: string; sheets?: unknown[]; lyrics?: unknown[] } | null>(null);
+  const [noteDialog, setNoteDialog] = useState({ isOpen: false, queueId: "", tone: "", note: "", rating: 5 });
   const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(null);
   const [sessionDate, setSessionDate] = useState<string | null>(null);
+  const [queueOpen, setQueueOpen] = useState(false);
+  const currentSongIdRef = useRef<string | null>(null);
+  useEffect(() => { currentSongIdRef.current = currentSongId; });
 
   const fetchQueue = async () => {
-    const res = await fetch(`${API}/api/sessions/${sessionId}/queue`);
-    if (!res.ok) return;
-    const data = await res.json();
+    const data = await fetchSessionQueue(sessionId);
     setQueue(data);
-    const playingSong = data.find((item: any) => item.status === "playing");
-    if (playingSong && !currentSongId) setCurrentSongId(playingSong.songs?.id);
+    const playingSong = data.find((item) => item.status === "playing");
+    if (playingSong && !currentSongIdRef.current) setCurrentSongId(playingSong.songs?.id ?? null);
   };
 
   useEffect(() => {
     if (!sessionId) return;
-    supabase.from("live_sessions").select("started_at, session_date").eq("id", sessionId).single()
-      .then(({ data }) => {
-        if (data?.started_at) setSessionStartedAt(data.started_at);
-        if (data?.session_date) setSessionDate(data.session_date);
-      });
+    const load = async () => {
+      const data = await fetchSessionInfo(sessionId);
+      if (data?.started_at) setSessionStartedAt(data.started_at);
+      if (data?.session_date) setSessionDate(data.session_date);
+    };
+    void load();
   }, [sessionId]);
 
   useEffect(() => {
     if (!sessionId) return;
-    fetchQueue();
-    // Supabase realtime used only as a trigger to re-fetch from the backend API
-    const channel = supabase
-      .channel(`queue_${sessionId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "queue_registrations", filter: `session_id=eq.${sessionId}` }, fetchQueue)
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const poll = async () => {
+      const data = await fetchSessionQueue(sessionId);
+      setQueue(data);
+      const playingSong = data.find((item) => item.status === "playing");
+      if (playingSong && !currentSongIdRef.current) setCurrentSongId(playingSong.songs?.id ?? null);
+    };
+    void poll();
+    const interval = setInterval(() => void poll(), 4000);
+    return () => clearInterval(interval);
   }, [sessionId]);
 
+  useEffect(() => {
+    const load = async () => {
+      if (!currentSongId) {
+        setCurrentSongDetail(null);
+        return;
+      }
+      const data = await fetchSongDetail(currentSongId);
+      setCurrentSongDetail(data);
+    };
+    void load();
+  }, [currentSongId]);
+
   const handlePlay = async (queueId: string, songId: string) => {
-    await supabase.from("queue_registrations").update({ status: "done" }).eq("status", "playing").eq("session_id", sessionId);
-    await supabase.from("queue_registrations").update({ status: "playing", actual_start: new Date().toISOString() }).eq("id", queueId);
+    await playQueueItem(sessionId, queueId);
     setCurrentSongId(songId);
   };
 
   const handleStop = async (queueId: string) => {
-    await supabase.from("queue_registrations").update({ status: "done", actual_end: new Date().toISOString() }).eq("id", queueId);
-    const next = queue.find(item => item.status === "waiting" && item.id !== queueId);
-    if (next) setCurrentSongId(next.songs?.id);
+    await stopQueueRegistration(queueId);
+    const next = queue.find((item) => item.status === "waiting" && item.id !== queueId);
+    if (next) setCurrentSongId(next.songs?.id ?? null);
   };
 
   const handleViewSong = (songId: string) => setCurrentSongId(songId);
 
   const handlePresent = async (url: string) => {
-    await supabase.from("live_sessions").update({ presenting_lyric_url: url }).eq("id", sessionId);
-    await supabase.channel(`lyric_present_${sessionId}`).send({ type: "broadcast", event: "present", payload: { url } });
+    await updateSessionPresenting(sessionId, url);
+    broadcastPresent(sessionId, url);
   };
 
   const handlePresentHtml = (lyricId: string) => handlePresentConfig(lyricId, DEFAULT_STYLE);
 
   const handlePresentConfig = async (lyricId: string, style: LyricHtmlStyle) => {
     const url = `/live/lyric?lyric_id=${lyricId}&${styleToParams(style)}`;
-    await supabase.from("live_sessions").update({ presenting_lyric_url: url }).eq("id", sessionId);
-    await supabase.channel(`lyric_present_${sessionId}`).send({ type: "broadcast", event: "present", payload: { url } });
+    await updateSessionPresenting(sessionId, url);
+    broadcastPresent(sessionId, url);
   };
 
   const saveNote = async () => {
-    await supabase.from("queue_registrations")
-      .update({ actual_tone: noteDialog.tone, note: noteDialog.note, rating: noteDialog.rating })
-      .eq("id", noteDialog.queueId);
+    await saveRegistrationNote(noteDialog.queueId, {
+      actual_tone: noteDialog.tone,
+      note: noteDialog.note,
+      rating: noteDialog.rating,
+    });
     setNoteDialog({ ...noteDialog, isOpen: false });
     fetchQueue();
   };
-
-  const [currentSongDetail, setCurrentSongDetail] = useState<any>(null);
-
-  useEffect(() => {
-    if (!currentSongId) return;
-    fetch(`${API}/api/songs/${currentSongId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setCurrentSongDetail(data); });
-  }, [currentSongId]);
-
-  const [queueOpen, setQueueOpen] = useState(false);
-
-  const sheets = currentSongDetail?.sheets ?? [];
-  const lyrics = currentSongDetail?.lyrics ?? [];
-  const waitingCount = queue.filter(q => q.status === "waiting").length;
 
   const handleViewSongAndCollapse = (songId: string) => {
     handleViewSong(songId);
     setQueueOpen(false);
   };
 
+  const sheets = currentSongDetail?.sheets ?? [];
+  const lyrics = currentSongDetail?.lyrics ?? [];
+  const waitingCount = queue.filter((q) => q.status === "waiting").length;
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-6 font-sans">
-<div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
 
         {/* Desktop sidebar — always visible on md+ */}
         <div className="hidden md:block md:w-1/3 shrink-0">
@@ -170,7 +179,7 @@ export default function LiveDashboard() {
 
       <button
         className="md:hidden fixed bottom-6 left-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-xl font-medium text-sm transition-colors"
-        onClick={() => setQueueOpen(v => !v)}
+        onClick={() => setQueueOpen((v) => !v)}
       >
         🎤 {waitingCount} chờ / {queue.length} tổng
       </button>
