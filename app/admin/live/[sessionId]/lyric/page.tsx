@@ -12,11 +12,12 @@ import {
   playQueueItem,
   updateSessionPresenting,
   fetchSongDetail,
+  stopQueueRegistration,
+  saveRegistrationNote,
+  broadcastPresent,
   type QueueItem,
   type SongDetail,
-} from "../../../../_lib/session_service";
-import { stopQueueRegistration, saveRegistrationNote } from "../../../../_lib/registration_service";
-import { broadcastPresent } from "../../../../_lib/supabase_service";
+} from "../../../../_lib";
 
 export default function LiveLyricDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
