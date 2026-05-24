@@ -1,3 +1,8 @@
+import type { Lyric } from "../_components/lyric-panel/lyricService";
+import type { Sheet } from "../_components/sheet-panel/sheetService";
+
+export type { Lyric, Sheet };
+
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 export type SessionInfo = {
@@ -20,8 +25,8 @@ export type SongDetail = {
   id: string;
   title: string;
   author?: string;
-  lyrics?: unknown[];
-  sheets?: unknown[];
+  lyrics?: Lyric[];
+  sheets?: Sheet[];
 };
 
 export async function fetchSessionInfo(sessionId: string): Promise<SessionInfo | null> {

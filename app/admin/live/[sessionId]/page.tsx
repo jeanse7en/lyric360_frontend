@@ -14,6 +14,7 @@ import {
   updateSessionPresenting,
   fetchSongDetail,
   type QueueItem,
+  type SongDetail,
 } from "../../../_lib/session_service";
 import { stopQueueRegistration, saveRegistrationNote } from "../../../_lib/registration_service";
 import { broadcastPresent } from "../../../_lib/supabase_service";
@@ -23,7 +24,7 @@ export default function LiveDashboard() {
 
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [currentSongId, setCurrentSongId] = useState<string | null>(null);
-  const [currentSongDetail, setCurrentSongDetail] = useState<{ title?: string; sheets?: unknown[]; lyrics?: unknown[] } | null>(null);
+  const [currentSongDetail, setCurrentSongDetail] = useState<SongDetail | null>(null);
   const [noteDialog, setNoteDialog] = useState({ isOpen: false, queueId: "", tone: "", note: "", rating: 5 });
   const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(null);
   const [sessionDate, setSessionDate] = useState<string | null>(null);
