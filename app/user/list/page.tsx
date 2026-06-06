@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Header from "../../_components/Header";
 import DataTable, { type Column } from "../../_components/DataTable";
 import { maskPhone } from "../../_lib/format";
+import { supabase } from "../../_lib";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -116,14 +117,17 @@ export default function SchedulePage() {
 
   useEffect(() => {
     if (!session) return;
-    const fetchQueue = () =>
+    const loadQueue = () =>
       fetch(`${API}/api/sessions/${session.id}/queue`)
         .then(r => (r.ok ? r.json() : []))
         .then((data: QueueRow[]) => { setQueue(data); setLoading(false); })
         .catch(() => setLoading(false));
-    fetchQueue();
-    const interval = setInterval(fetchQueue, 15000);
-    return () => clearInterval(interval);
+    loadQueue();
+    const channel = supabase
+      .channel(`queue_list_${session.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "queue_registrations", filter: `session_id=eq.${session.id}` }, () => { void loadQueue(); })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [session]);
 
   return (

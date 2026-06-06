@@ -15,6 +15,7 @@ import {
   stopQueueRegistration,
   saveRegistrationNote,
   broadcastPresent,
+  supabase,
   type QueueItem,
   type SongDetail,
 } from "../../../../_lib";
@@ -39,15 +40,18 @@ export default function LiveLyricDashboard() {
 
   useEffect(() => {
     if (!sessionId) return;
-    const poll = async () => {
+    const loadQueue = async () => {
       const data = await fetchSessionQueue(sessionId);
       setQueue(data);
       const playingSong = data.find((item) => item.status === "playing");
       if (playingSong && !currentSongIdRef.current) setCurrentSongId(playingSong.songs?.id ?? null);
     };
-    void poll();
-    const interval = setInterval(() => void poll(), 4000);
-    return () => clearInterval(interval);
+    void loadQueue();
+    const channel = supabase
+      .channel(`queue_lyric_${sessionId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "queue_registrations", filter: `session_id=eq.${sessionId}` }, () => { void loadQueue(); })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [sessionId]);
 
   useEffect(() => {
