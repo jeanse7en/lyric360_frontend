@@ -1,76 +1,66 @@
 "use client";
 
 import { Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Header from "../../_components/Header";
 import Footer from "../../_components/Footer";
-import SectionCard from "./_components/SectionCard";
-import DrinksSection from "./_components/DrinksSection";
-import RegistrationSection from "./_components/RegistrationSection";
-import SongDisplaySection from "./_components/SongDisplaySection";
-import QRSection from "./_components/QRSection";
-import CopyFBSection from "./_components/CopyFBSection";
-import GooglePhotosSection from "./_components/GooglePhotosSection";
-import PreorderListSection from "./_components/PreorderListSection";
+import ConfigTab from "./_components/ConfigTab";
+import TracesTab from "./_components/TracesTab";
 
-export default function SettingsPage() {
+const TABS = [
+  { key: "config", label: "Cấu hình" },
+  { key: "traces", label: "Nhật ký" },
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
+
+function SettingsContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tab = (searchParams.get("tab") ?? "config") as TabKey;
+
+  const setTab = (key: TabKey) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", key);
+    router.replace(`?${params.toString()}`);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       <Header />
-      <div className="flex-1 max-w-2xl w-full mx-auto py-10 px-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Cài đặt</h1>
+      <div className={`flex-1 w-full mx-auto py-10 px-4 ${tab === "traces" ? "max-w-7xl" : "max-w-2xl"}`}>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Hệ thống</h1>
 
-        <SectionCard
-          title="Đồ uống"
-          description="Danh sách đồ uống hiển thị trong form đặt bài."
-        >
-          <DrinksSection />
-        </SectionCard>
+        {/* Tab bar */}
+        <div className="flex gap-1 mb-8 border-b border-gray-200 dark:border-gray-700">
+          {TABS.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                tab === t.key
+                  ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-        <SectionCard
-          title="Đặt bài"
-          description="Cấu hình giới hạn số lượng bài trong hàng chờ đăng ký."
-        >
-          <RegistrationSection />
-        </SectionCard>
+        {tab === "config" && <ConfigTab />}
 
-        <SectionCard
-          title="Hiển thị bài hát"
-          description="Cài đặt mặc định cho màn hình hiển thị lời bài hát."
-        >
-          <SongDisplaySection />
-        </SectionCard>
-
-        <SectionCard
-          title="Nội dung Copy FB"
-          description="Mẫu văn bản khi nhấn Copy FB trong hàng đợi. Dùng tag [Bài hát], [Tác giả], [Người hát], [Ngày diễn]."
-        >
-          <CopyFBSection />
-        </SectionCard>
-
-        <SectionCard
-          title="Google Photos"
-          description="Kết nối tài khoản Google Photos một lần. Sau đó hệ thống tự đọc video để ghép vào bài hát."
-        >
-          <Suspense fallback={null}>
-            <GooglePhotosSection />
-          </Suspense>
-        </SectionCard>
-
-        <SectionCard
-          title="Danh sách Pre-order"
-          description="Bài hát được đặt sẵn — tự động thêm vào hàng đợi khi tạo buổi diễn mới."
-        >
-          <PreorderListSection />
-        </SectionCard>
-
-        <SectionCard
-          title="QR đăng ký bài hát"
-          description="Khách hàng quét mã này để truy cập trang đăng ký bài hát."
-        >
-          <QRSection />
-        </SectionCard>
+        {tab === "traces" && <TracesTab />}
       </div>
       <Footer />
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={null}>
+      <SettingsContent />
+    </Suspense>
   );
 }
